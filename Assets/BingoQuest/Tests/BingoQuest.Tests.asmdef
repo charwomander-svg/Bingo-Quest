@@ -1,0 +1,21 @@
+{
+    "name": "BingoQuest.Tests",
+    "rootNamespace": "BingoQuest.Tests",
+    "references": [
+        "GUID:be9e4d026d726864f9bdb3d2f2b93c74",
+        "BingoQuest"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
