@@ -30,17 +30,21 @@ namespace BingoQuest.Gameplay.Combat
     }
 
     /// <summary>
-    /// Core ability execution and cooldown management.
+    /// Core ability execution and cooldown management with config-based tuning.
     /// </summary>
     public class Ability
     {
         public AbilityDefinition Definition { get; }
         public float RemainingCooldown { get; private set; }
         public bool IsReady => RemainingCooldown <= 0;
+        private AbilityConfig config;
+        private AbilitySlot slot;
 
-        public Ability(AbilityDefinition definition)
+        public Ability(AbilityDefinition definition, AbilitySlot slot = AbilitySlot.Primary, AbilityConfig config = null)
         {
             Definition = definition;
+            this.slot = slot;
+            this.config = config;
             RemainingCooldown = 0;
         }
 
@@ -49,7 +53,14 @@ namespace BingoQuest.Gameplay.Combat
             if (!IsReady)
                 return false;
 
-            RemainingCooldown = Definition.Cooldown;
+            // Calculate cooldown with config modifiers
+            float cooldown = Definition.Cooldown;
+            if (config != null)
+            {
+                cooldown = config.CalculateFinalCooldown(slot, cooldown);
+            }
+            
+            RemainingCooldown = cooldown;
             return true;
         }
 
