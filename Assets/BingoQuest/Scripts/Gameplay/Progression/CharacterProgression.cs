@@ -123,6 +123,15 @@ namespace BingoQuest.Gameplay.Progression
         public float GetFloatBonus(string bonusType) =>
             floatBonuses.TryGetValue(bonusType, out var bonus) ? bonus : 0;
 
+        public void ForceSetLevel(int level, int experience)
+        {
+            Level = level;
+            Experience = experience;
+            LevelUpThreshold = (int)(100 * Mathf.Pow(1.1f, Level - 1));
+        }
+
+        public void ForceSetSkillPoints(int points) => SkillPoints = points;
+
         public int GetExperienceForNextLevel() => LevelUpThreshold - Experience;
 
         public float GetLevelProgress() => (float)Experience / LevelUpThreshold;

@@ -115,6 +115,21 @@ namespace BingoQuest.Gameplay.Progression
             return result;
         }
 
+        public List<string> GetUnlockedNodeIds()
+        {
+            var result = new List<string>();
+            foreach (var (id, unlocked) in unlockedNodes)
+                if (unlocked) result.Add(id);
+            return result;
+        }
+
+        public void ForceUnlock(string nodeId)
+        {
+            if (!nodes.ContainsKey(nodeId))
+                nodes[nodeId] = new SkillNode(nodeId, nodeId);
+            unlockedNodes[nodeId] = true;
+        }
+
         public override string ToString()
         {
             int unlockedCount = 0;

@@ -15,8 +15,11 @@ namespace BingoQuest.Gameplay.Loot
         };
 
         public IReadOnlyList<ItemInstance> Items => _items;
+        public IReadOnlyList<ItemInstance> AllItems => _items;
         public IReadOnlyDictionary<string, int> Materials => _materials;
+        public IReadOnlyDictionary<string, int> AllMaterials => _materials;
         public IReadOnlyDictionary<string, int> Currencies => _currencies;
+        public IReadOnlyDictionary<string, int> AllCurrencies => _currencies;
 
         public void AddItem(ItemInstance item)
         {

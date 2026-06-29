@@ -17,7 +17,7 @@ namespace BingoQuest.Gameplay.Combat
         public ElementType ElementType { get; set; } = ElementType.Physical;
         
         public bool AppliesStatusEffect { get; set; }
-        public ElementType StatusEffectType { get; set; }
+        public StatusEffectType StatusEffectType { get; set; }
         public int StatusEffectChance { get; set; } // 0-100
         
         public bool IsAOE { get; set; }
@@ -109,3 +109,4 @@ namespace BingoQuest.Gameplay.Combat
             GetAbility(slot)?.CooldownPercent ?? 0;
     }
 }
+
