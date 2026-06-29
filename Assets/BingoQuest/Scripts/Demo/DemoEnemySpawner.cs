@@ -29,6 +29,25 @@ namespace BingoQuest.Demo
             timer = 0f;
         }
 
+        public void ApplyRegionSettings(float intervalSeconds, int maxEnemies, float radius)
+        {
+            spawnInterval = Mathf.Max(0.25f, intervalSeconds);
+            maxAliveEnemies = Mathf.Max(0, maxEnemies);
+            spawnRadius = Mathf.Max(1f, radius);
+            timer = 0f;
+        }
+
+        public void DespawnAllEnemies()
+        {
+            for (int i = activeEnemies.Count - 1; i >= 0; i--)
+            {
+                var enemy = activeEnemies[i];
+                if (enemy != null)
+                    Destroy(enemy.gameObject);
+            }
+            activeEnemies.Clear();
+        }
+
         private void Update()
         {
             if (!active || player == null)

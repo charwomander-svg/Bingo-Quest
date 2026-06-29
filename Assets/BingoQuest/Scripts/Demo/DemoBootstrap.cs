@@ -13,11 +13,14 @@ namespace BingoQuest.Demo
     public class DemoBootstrap : MonoBehaviour
     {
         private Combatant playerCombatant;
+        private DemoPlayerController playerController;
         private DemoEnemySpawner enemySpawner;
+        private DemoWorldDirector worldDirector;
         private Inventory inventory;
         private LootService lootService;
         private LootTable lootTable;
         private CharacterProgression progression;
+        private Renderer floorRenderer;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoSpawn()
@@ -31,25 +34,31 @@ namespace BingoQuest.Demo
 
         private IEnumerator Start()
         {
-            EnsureCamera();
+            floorRenderer = EnsureCameraAndWorldGeometry();
             EnsureCoreSystems();
 
             CreatePlayer();
             CreateEnemySpawner();
             CreateLootSystems();
             CreateProgression();
+            CreateWorldDirector();
 
             var hud = gameObject.AddComponent<DemoHudOverlay>();
-            hud.Bind(playerCombatant, () => enemySpawner.GetAliveEnemyCount(), () => inventory, () => progression);
+            hud.Bind(
+                playerCombatant,
+                () => enemySpawner.GetAliveEnemyCount(),
+                () => inventory,
+                () => progression,
+                () => worldDirector != null ? worldDirector.CurrentRegionName : "Unknown");
 
             yield return null;
 
             ConfigurePlayerStatsAndAbilities();
-            StartBingoRun();
+            worldDirector.BeginWorldRun();
             enemySpawner.Begin();
         }
 
-        private static void EnsureCamera()
+        private static Renderer EnsureCameraAndWorldGeometry()
         {
             var camera = Camera.main;
             if (camera == null)
@@ -73,10 +82,16 @@ namespace BingoQuest.Demo
                 light.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
             }
 
-            var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            floor.name = "DemoFloor";
-            floor.transform.position = Vector3.zero;
-            floor.transform.localScale = new Vector3(2.5f, 1f, 2.5f);
+            var floor = GameObject.Find("DemoFloor");
+            if (floor == null)
+            {
+                floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                floor.name = "DemoFloor";
+                floor.transform.position = Vector3.zero;
+                floor.transform.localScale = new Vector3(2.8f, 1f, 2.8f);
+            }
+
+            return floor.GetComponent<Renderer>();
         }
 
         private static void EnsureCoreSystems()
@@ -103,8 +118,16 @@ namespace BingoQuest.Demo
             playerCombatant = playerGo.AddComponent<Combatant>();
             SetCombatantPrivateFields(playerCombatant, "player_demo", true);
 
-            var controller = playerGo.AddComponent<DemoPlayerController>();
-            controller.Initialize(playerCombatant, () => enemySpawner.GetNearestAliveEnemy(playerGo.transform.position), () => lootService.OpenChest(lootTable, progression.Level, 2));
+            playerController = playerGo.AddComponent<DemoPlayerController>();
+            playerController.Initialize(
+                playerCombatant,
+                () => enemySpawner.GetNearestAliveEnemy(playerGo.transform.position),
+                () => lootService.OpenChest(lootTable, progression.Level, 2),
+                () =>
+                {
+                    if (worldDirector != null)
+                        worldDirector.TravelToNextRegion();
+                });
         }
 
         private void CreateEnemySpawner()
@@ -148,6 +171,13 @@ namespace BingoQuest.Demo
         {
             var tree = SkillTreeFactory.CreateWarriorTree();
             progression = new CharacterProgression(BuiltInClasses.Warrior, tree);
+        }
+
+        private void CreateWorldDirector()
+        {
+            var worldGo = new GameObject("DemoWorldDirector");
+            worldDirector = worldGo.AddComponent<DemoWorldDirector>();
+            worldDirector.Initialize(enemySpawner, progression, floorRenderer, OnRegionObjectiveContextReady);
         }
 
         private void ConfigurePlayerStatsAndAbilities()
@@ -206,28 +236,21 @@ namespace BingoQuest.Demo
             }));
         }
 
-        private void StartBingoRun()
+        private static void OnRegionObjectiveContextReady(ObjectiveContext context)
         {
-            if (BingoSystem.Instance == null)
-                return;
-
-            var context = new ObjectiveContext
-            {
-                ZoneId = "demo_arena",
-                CardDifficulty = 1,
-                PlayerClassId = "warrior",
-                RunSeed = 777
-            };
-
-            BingoSystem.Instance.GenerateNewRun(context);
+            if (BingoSystem.Instance != null)
+                BingoSystem.Instance.GenerateNewRun(context);
         }
 
         private void OnEnemySpawned(Combatant enemy)
         {
             SetCombatantPrivateFields(enemy, $"enemy_{UnityEngine.Random.Range(1000, 9999)}", false);
-            enemy.Stats.MaxHealth = 55;
-            enemy.Stats.Health = 55;
-            enemy.Stats.Attack = 9;
+            float hpMultiplier = worldDirector != null ? worldDirector.CurrentEnemyHealthMultiplier : 1f;
+            float atkMultiplier = worldDirector != null ? worldDirector.CurrentEnemyAttackMultiplier : 1f;
+
+            enemy.Stats.MaxHealth = Mathf.RoundToInt(55 * hpMultiplier);
+            enemy.Stats.Health = enemy.Stats.MaxHealth;
+            enemy.Stats.Attack = Mathf.RoundToInt(9 * atkMultiplier);
             enemy.Stats.Defense = 2;
             enemy.Stats.CritChance = 0.04f;
             enemy.Stats.DodgeChance = 0.03f;

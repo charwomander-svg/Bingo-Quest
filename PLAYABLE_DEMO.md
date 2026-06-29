@@ -16,10 +16,12 @@ This repository now includes a code-driven playable demo bootstrap.
 - Dodge objective trigger: `Left Shift` / `Right Shift`
 - Open chest loot: `L`
 - Trigger boss objective event: `B`
+- Travel to the next unlocked region: `N`
 
 ## Demo loop
 
 - Fight spawning enemies in the arena.
+- Move through unlocked regions (`Whispering Forest` -> `Forgotten Mines` -> `Frozen Peaks`) after boss objective clears.
 - Complete objective events through combat actions.
 - Progress the Bingo card and trigger pattern rewards.
 - Gain experience and levels from kills.
@@ -28,6 +30,7 @@ This repository now includes a code-driven playable demo bootstrap.
 ## Files
 
 - `Assets/BingoQuest/Scripts/Demo/DemoBootstrap.cs`
+- `Assets/BingoQuest/Scripts/Demo/DemoWorldDirector.cs`
 - `Assets/BingoQuest/Scripts/Demo/DemoPlayerController.cs`
 - `Assets/BingoQuest/Scripts/Demo/DemoEnemySpawner.cs`
 - `Assets/BingoQuest/Scripts/Demo/DemoHudOverlay.cs`

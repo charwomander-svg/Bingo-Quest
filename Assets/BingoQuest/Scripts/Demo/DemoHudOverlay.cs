@@ -14,14 +14,21 @@ namespace BingoQuest.Demo
         private Func<int> aliveEnemyCount;
         private Func<Inventory> inventoryResolver;
         private Func<CharacterProgression> progressionResolver;
+        private Func<string> regionNameResolver;
         private string lastPattern = "None";
 
-        public void Bind(Combatant combatant, Func<int> enemyCount, Func<Inventory> inventory, Func<CharacterProgression> progression)
+        public void Bind(
+            Combatant combatant,
+            Func<int> enemyCount,
+            Func<Inventory> inventory,
+            Func<CharacterProgression> progression,
+            Func<string> regionName = null)
         {
             player = combatant;
             aliveEnemyCount = enemyCount;
             inventoryResolver = inventory;
             progressionResolver = progression;
+            regionNameResolver = regionName;
 
             if (BingoSystem.Instance != null)
                 BingoSystem.Instance.OnPatternDetected += OnPatternDetected;
@@ -43,7 +50,8 @@ namespace BingoQuest.Demo
             GUI.color = Color.white;
             GUILayout.BeginArea(new Rect(12, 12, 520, 760), GUI.skin.box);
             GUILayout.Label("Bingo Quest Playable Demo");
-            GUILayout.Label("WASD move | Space attack | Q/W/E/R abilities | Shift dodge | L chest loot | B boss objective");
+            GUILayout.Label("WASD move | Space attack | Q/W/E/R abilities | Shift dodge | L chest loot | B boss objective | N next region");
+            GUILayout.Label($"Region: {regionNameResolver?.Invoke() ?? "Unknown"}");
 
             if (player != null)
             {

@@ -12,12 +12,14 @@ namespace BingoQuest.Demo
         private Combatant combatant;
         private Func<Combatant> targetResolver;
         private Action openChestAction;
+        private Action travelNextRegionAction;
 
-        public void Initialize(Combatant source, Func<Combatant> resolveTarget, Action openChest)
+        public void Initialize(Combatant source, Func<Combatant> resolveTarget, Action openChest, Action travelNextRegion = null)
         {
             combatant = source;
             targetResolver = resolveTarget;
             openChestAction = openChest;
+            travelNextRegionAction = travelNextRegion;
         }
 
         private void Update()
@@ -62,7 +64,9 @@ namespace BingoQuest.Demo
 
             if (Input.GetKeyDown(KeyCode.B))
                 ObjectiveEventBus.Instance?.Emit(ObjectiveEvent.BossDefeated("demo_boss"));
+
+            if (Input.GetKeyDown(KeyCode.N))
+                travelNextRegionAction?.Invoke();
         }
     }
 }
-
