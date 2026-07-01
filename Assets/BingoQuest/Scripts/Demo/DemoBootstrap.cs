@@ -3,6 +3,7 @@ using System.Collections;
 using System.Reflection;
 using BingoQuest.Gameplay.Bingo;
 using BingoQuest.Gameplay.Combat;
+using BingoQuest.Gameplay.Content;
 using BingoQuest.Gameplay.Loot;
 using BingoQuest.Gameplay.Objectives;
 using BingoQuest.Gameplay.Progression;
@@ -20,6 +21,7 @@ namespace BingoQuest.Demo
         private LootService lootService;
         private LootTable lootTable;
         private CharacterProgression progression;
+        private AuthoredContentCatalog contentCatalog;
         private Renderer floorRenderer;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -36,6 +38,9 @@ namespace BingoQuest.Demo
         {
             floorRenderer = EnsureCameraAndWorldGeometry();
             EnsureCoreSystems();
+            contentCatalog = AuthoredContentCatalog.CreateDefault();
+            if (BingoSystem.Instance != null)
+                BingoSystem.Instance.Initialize(contentCatalog);
 
             CreatePlayer();
             CreateEnemySpawner();
@@ -134,7 +139,7 @@ namespace BingoQuest.Demo
         {
             var spawnerGo = new GameObject("DemoEnemySpawner");
             enemySpawner = spawnerGo.AddComponent<DemoEnemySpawner>();
-            enemySpawner.Initialize(playerCombatant, OnEnemySpawned);
+            enemySpawner.Initialize(playerCombatant, SelectEnemyForSpawn, OnEnemySpawned);
         }
 
         private void CreateLootSystems()
@@ -169,8 +174,10 @@ namespace BingoQuest.Demo
 
         private void CreateProgression()
         {
-            var tree = SkillTreeFactory.CreateWarriorTree();
-            progression = new CharacterProgression(BuiltInClasses.Warrior, tree);
+            var classDefinition = contentCatalog != null ? contentCatalog.GetClassDefinition("warrior") : BuiltInClasses.Warrior;
+            var tree = contentCatalog != null ? contentCatalog.CreateSkillTree("warrior") : SkillTreeFactory.CreateWarriorTree();
+            progression = new CharacterProgression(classDefinition, tree);
+            contentCatalog?.ApplyStarterSkills(progression);
         }
 
         private void CreateWorldDirector()
@@ -185,55 +192,30 @@ namespace BingoQuest.Demo
             if (playerCombatant == null)
                 return;
 
-            playerCombatant.Stats.MaxHealth = 180;
-            playerCombatant.Stats.Health = 180;
-            playerCombatant.Stats.Attack = 22;
-            playerCombatant.Stats.Defense = 8;
-            playerCombatant.Stats.CritChance = 0.22f;
-            playerCombatant.Stats.DodgeChance = 0.12f;
+            if (progression != null)
+            {
+                ClassStatApplier.ApplyClassStats(playerCombatant.Stats, progression.Class);
+                progression.ApplyBonusesToStats(playerCombatant.Stats);
+            }
             playerCombatant.Stats.ElementalPower = 6;
 
-            playerCombatant.ActionBar.SetAbility(AbilitySlot.Primary, new Ability(new AbilityDefinition
+            var abilities = contentCatalog != null ? contentCatalog.CreateStartingAbilities("warrior") : new System.Collections.Generic.List<Ability>();
+            if (abilities.Count > 0)
             {
-                Id = "slash",
-                Name = "Slash",
-                Cooldown = 0.6f,
-                DamageScale = 1.3f,
-                ElementType = ElementType.Physical
-            }));
-
-            playerCombatant.ActionBar.SetAbility(AbilitySlot.Secondary, new Ability(new AbilityDefinition
+                for (int i = 0; i < abilities.Count && i < 4; i++)
+                    playerCombatant.ActionBar.SetAbility((AbilitySlot)i, abilities[i]);
+            }
+            else
             {
-                Id = "fire_burst",
-                Name = "Fire Burst",
-                Cooldown = 1.8f,
-                DamageScale = 1.6f,
-                ElementType = ElementType.Fire,
-                AppliesStatusEffect = true,
-                StatusEffectType = StatusEffectType.Burn,
-                StatusEffectChance = 70
-            }));
-
-            playerCombatant.ActionBar.SetAbility(AbilitySlot.Tertiary, new Ability(new AbilityDefinition
-            {
-                Id = "frost_strike",
-                Name = "Frost Strike",
-                Cooldown = 2.2f,
-                DamageScale = 1.8f,
-                ElementType = ElementType.Frost,
-                AppliesStatusEffect = true,
-                StatusEffectType = StatusEffectType.Freeze,
-                StatusEffectChance = 60
-            }));
-
-            playerCombatant.ActionBar.SetAbility(AbilitySlot.Ultimate, new Ability(new AbilityDefinition
-            {
-                Id = "execute",
-                Name = "Execute",
-                Cooldown = 5.5f,
-                DamageScale = 3.0f,
-                ElementType = ElementType.Physical
-            }));
+                playerCombatant.ActionBar.SetAbility(AbilitySlot.Primary, new Ability(new AbilityDefinition
+                {
+                    Id = "slash",
+                    Name = "Slash",
+                    Cooldown = 0.6f,
+                    DamageScale = 1.3f,
+                    ElementType = ElementType.Physical
+                }));
+            }
         }
 
         private static void OnRegionObjectiveContextReady(ObjectiveContext context)
@@ -242,29 +224,49 @@ namespace BingoQuest.Demo
                 BingoSystem.Instance.GenerateNewRun(context);
         }
 
-        private void OnEnemySpawned(Combatant enemy)
+        private EnemyDefinition SelectEnemyForSpawn(string regionId, int spawnIndex)
         {
-            SetCombatantPrivateFields(enemy, $"enemy_{UnityEngine.Random.Range(1000, 9999)}", false);
+            return contentCatalog != null ? contentCatalog.GetEnemyForRegion(regionId, spawnIndex) : null;
+        }
+
+        private void OnEnemySpawned(Combatant enemy, EnemyDefinition enemyDefinition)
+        {
+            if (enemyDefinition != null)
+                SetCombatantPrivateFields(enemy, $"{enemyDefinition.EnemyId}_{UnityEngine.Random.Range(1000, 9999)}", false);
+            else
+                SetCombatantPrivateFields(enemy, $"enemy_{UnityEngine.Random.Range(1000, 9999)}", false);
+
             float hpMultiplier = worldDirector != null ? worldDirector.CurrentEnemyHealthMultiplier : 1f;
             float atkMultiplier = worldDirector != null ? worldDirector.CurrentEnemyAttackMultiplier : 1f;
 
-            enemy.Stats.MaxHealth = Mathf.RoundToInt(55 * hpMultiplier);
-            enemy.Stats.Health = enemy.Stats.MaxHealth;
-            enemy.Stats.Attack = Mathf.RoundToInt(9 * atkMultiplier);
-            enemy.Stats.Defense = 2;
-            enemy.Stats.CritChance = 0.04f;
-            enemy.Stats.DodgeChance = 0.03f;
+            var stats = enemyDefinition != null
+                ? ContentFactory.CreateStatsFromEnemy(enemyDefinition)
+                : new CharacterStats { MaxHealth = 55, Health = 55, Attack = 9, Defense = 2, CritChance = 0.04f, DodgeChance = 0.03f };
+            stats.MaxHealth = Mathf.RoundToInt(stats.MaxHealth * hpMultiplier);
+            stats.Health = stats.MaxHealth;
+            stats.Attack = Mathf.RoundToInt(stats.Attack * atkMultiplier);
+
+            enemy.Stats.MaxHealth = stats.MaxHealth;
+            enemy.Stats.Health = stats.Health;
+            enemy.Stats.Attack = stats.Attack;
+            enemy.Stats.Defense = stats.Defense;
+            enemy.Stats.CritChance = stats.CritChance;
+            enemy.Stats.DodgeChance = stats.DodgeChance;
 
             enemy.OnDefeated += () =>
             {
                 progression.GainExperience(28);
-                lootService.DropEnemyLoot(new ItemDefinition
-                {
-                    ItemId = "enemy_drop",
-                    DisplayName = "Scrap Trophy",
-                    Type = ItemType.Material,
-                    BasePower = 3
-                }, progression.Level, 0.03f);
+                var lootDefinition = contentCatalog != null ? contentCatalog.CreateEnemyLootDefinition(enemyDefinition) : null;
+                lootService.DropEnemyLoot(
+                    lootDefinition ?? new ItemDefinition
+                    {
+                        ItemId = "enemy_drop",
+                        DisplayName = "Scrap Trophy",
+                        Type = ItemType.Material,
+                        BasePower = 3
+                    },
+                    progression.Level,
+                    enemyDefinition != null ? enemyDefinition.LootDropChance : 0.03f);
             };
         }
 

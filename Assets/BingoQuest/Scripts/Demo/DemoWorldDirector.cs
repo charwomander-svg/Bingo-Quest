@@ -19,6 +19,7 @@ namespace BingoQuest.Demo
         private int _transitionCursor;
 
         public string CurrentRegionName => _worldMap?.CurrentRegion?.DisplayName ?? "Unknown";
+        public string CurrentRegionId => _worldMap?.CurrentRegionId ?? "unknown";
         public float CurrentEnemyHealthMultiplier => _worldMap?.CurrentRegion?.EnemyHealthMultiplier ?? 1f;
         public float CurrentEnemyAttackMultiplier => _worldMap?.CurrentRegion?.EnemyAttackMultiplier ?? 1f;
 
@@ -136,7 +137,7 @@ namespace BingoQuest.Demo
         {
             _spawner?.DespawnAllEnemies();
             ApplyVisuals(region.RegionId);
-            _spawner?.ApplyRegionSettings(region.SpawnIntervalSeconds, region.MaxAliveEnemies, region.SpawnRadius);
+            _spawner?.ApplyRegionSettings(region.RegionId, region.SpawnIntervalSeconds, region.MaxAliveEnemies, region.SpawnRadius);
 
             int progressionDifficultyBonus = ((_progression?.Level ?? 1) - 1) / 5;
             var context = _worldMap.BuildObjectiveContext(

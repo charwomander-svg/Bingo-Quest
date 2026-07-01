@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BingoQuest.Gameplay.Combat;
+using BingoQuest.Gameplay.Content;
 using UnityEngine;
 
 namespace BingoQuest.Demo
@@ -13,13 +14,20 @@ namespace BingoQuest.Demo
 
         private readonly List<Combatant> activeEnemies = new List<Combatant>();
         private Combatant player;
-        private Action<Combatant> onEnemySpawned;
+        private Func<string, int, EnemyDefinition> enemySelector;
+        private Action<Combatant, EnemyDefinition> onEnemySpawned;
+        private string currentRegionId;
+        private int spawnIndex;
         private float timer;
         private bool active;
 
-        public void Initialize(Combatant playerCombatant, Action<Combatant> enemySpawned)
+        public void Initialize(
+            Combatant playerCombatant,
+            Func<string, int, EnemyDefinition> enemySelection,
+            Action<Combatant, EnemyDefinition> enemySpawned)
         {
             player = playerCombatant;
+            enemySelector = enemySelection;
             onEnemySpawned = enemySpawned;
         }
 
@@ -29,11 +37,13 @@ namespace BingoQuest.Demo
             timer = 0f;
         }
 
-        public void ApplyRegionSettings(float intervalSeconds, int maxEnemies, float radius)
+        public void ApplyRegionSettings(string regionId, float intervalSeconds, int maxEnemies, float radius)
         {
+            currentRegionId = regionId;
             spawnInterval = Mathf.Max(0.25f, intervalSeconds);
             maxAliveEnemies = Mathf.Max(0, maxEnemies);
             spawnRadius = Mathf.Max(1f, radius);
+            spawnIndex = 0;
             timer = 0f;
         }
 
@@ -65,22 +75,37 @@ namespace BingoQuest.Demo
 
         private void SpawnEnemy()
         {
+            var enemyDefinition = enemySelector?.Invoke(currentRegionId, spawnIndex++);
             float angle = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
             var offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * spawnRadius;
             var position = player.transform.position + offset;
             position.y = 1f;
 
             var enemy = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            enemy.name = "DemoEnemy";
+            enemy.name = enemyDefinition != null ? enemyDefinition.DisplayName : "DemoEnemy";
             enemy.transform.position = position;
             enemy.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
+
+            if (enemyDefinition != null)
+                ApplyEnemyVisuals(enemy, enemyDefinition);
 
             var combatant = enemy.AddComponent<Combatant>();
             var brain = enemy.AddComponent<DemoEnemyBrain>();
             brain.Initialize(combatant, player);
 
             activeEnemies.Add(combatant);
-            onEnemySpawned?.Invoke(combatant);
+            onEnemySpawned?.Invoke(combatant, enemyDefinition);
+        }
+
+        private static void ApplyEnemyVisuals(GameObject enemy, EnemyDefinition definition)
+        {
+            if (enemy == null || definition == null)
+                return;
+
+            enemy.transform.localScale = Vector3.one * Mathf.Max(0.5f, definition.ModelScale);
+            var renderer = enemy.GetComponent<Renderer>();
+            if (renderer != null)
+                renderer.material.color = definition.Tint;
         }
 
         public Combatant GetNearestAliveEnemy(Vector3 position)
