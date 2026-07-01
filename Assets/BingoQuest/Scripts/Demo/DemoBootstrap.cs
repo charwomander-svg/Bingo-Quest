@@ -4,6 +4,7 @@ using System.Reflection;
 using BingoQuest.Gameplay.Bingo;
 using BingoQuest.Gameplay.Combat;
 using BingoQuest.Gameplay.Content;
+using BingoQuest.Gameplay.Difficulty;
 using BingoQuest.Gameplay.Loot;
 using BingoQuest.Gameplay.Objectives;
 using BingoQuest.Gameplay.Progression;
@@ -22,6 +23,7 @@ namespace BingoQuest.Demo
         private LootTable lootTable;
         private CharacterProgression progression;
         private AuthoredContentCatalog contentCatalog;
+        private DifficultyPreset[] allPresets;
         private Renderer floorRenderer;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -38,6 +40,16 @@ namespace BingoQuest.Demo
         {
             floorRenderer = EnsureCameraAndWorldGeometry();
             EnsureCoreSystems();
+
+            allPresets = DifficultyPresetFactory.CreateAll();
+
+            // Show difficulty selector and wait for the player to pick
+            var selector = gameObject.AddComponent<DifficultySelectorUI>();
+            selector.SetPresets(allPresets);
+            yield return new WaitUntil(() => selector.HasSelected);
+            DifficultyManager.Instance.SetPreset(selector.SelectedPreset);
+            Destroy(selector);
+
             contentCatalog = AuthoredContentCatalog.CreateDefault();
             if (BingoSystem.Instance != null)
                 BingoSystem.Instance.Initialize(contentCatalog);
@@ -176,7 +188,8 @@ namespace BingoQuest.Demo
         {
             var classDefinition = contentCatalog != null ? contentCatalog.GetClassDefinition("warrior") : BuiltInClasses.Warrior;
             var tree = contentCatalog != null ? contentCatalog.CreateSkillTree("warrior") : SkillTreeFactory.CreateWarriorTree();
-            progression = new CharacterProgression(classDefinition, tree);
+            var progressionConfig = DifficultyManager.Instance.GetProgressionConfig();
+            progression = new CharacterProgression(classDefinition, tree, progressionConfig);
             contentCatalog?.ApplyStarterSkills(progression);
         }
 
@@ -199,7 +212,8 @@ namespace BingoQuest.Demo
             }
             playerCombatant.Stats.ElementalPower = 6;
 
-            var abilities = contentCatalog != null ? contentCatalog.CreateStartingAbilities("warrior") : new System.Collections.Generic.List<Ability>();
+            var abilityConfig = DifficultyManager.Instance.GetAbilityConfig();
+            var abilities = contentCatalog != null ? contentCatalog.CreateStartingAbilities("warrior", abilityConfig) : new System.Collections.Generic.List<Ability>();
             if (abilities.Count > 0)
             {
                 for (int i = 0; i < abilities.Count && i < 4; i++)
@@ -239,12 +253,17 @@ namespace BingoQuest.Demo
             float hpMultiplier = worldDirector != null ? worldDirector.CurrentEnemyHealthMultiplier : 1f;
             float atkMultiplier = worldDirector != null ? worldDirector.CurrentEnemyAttackMultiplier : 1f;
 
+            // Apply difficulty scaling on top of region scaling
+            var balanceConfig = DifficultyManager.Instance.GetBalanceConfig();
+            var diffMode = DifficultyManager.Instance.GetDifficultyMode();
+            float diffMult = balanceConfig != null ? balanceConfig.GetDifficultyMultiplier(diffMode) : 1f;
+
             var stats = enemyDefinition != null
                 ? ContentFactory.CreateStatsFromEnemy(enemyDefinition)
                 : new CharacterStats { MaxHealth = 55, Health = 55, Attack = 9, Defense = 2, CritChance = 0.04f, DodgeChance = 0.03f };
-            stats.MaxHealth = Mathf.RoundToInt(stats.MaxHealth * hpMultiplier);
+            stats.MaxHealth = Mathf.RoundToInt(stats.MaxHealth * hpMultiplier * diffMult);
             stats.Health = stats.MaxHealth;
-            stats.Attack = Mathf.RoundToInt(stats.Attack * atkMultiplier);
+            stats.Attack = Mathf.RoundToInt(stats.Attack * atkMultiplier * diffMult);
 
             enemy.Stats.MaxHealth = stats.MaxHealth;
             enemy.Stats.Health = stats.Health;
@@ -255,7 +274,8 @@ namespace BingoQuest.Demo
 
             enemy.OnDefeated += () =>
             {
-                progression.GainExperience(28);
+                int xpReward = enemyDefinition != null ? enemyDefinition.ExperienceReward : 28;
+                progression.GainExperience(xpReward);
                 var lootDefinition = contentCatalog != null ? contentCatalog.CreateEnemyLootDefinition(enemyDefinition) : null;
                 lootService.DropEnemyLoot(
                     lootDefinition ?? new ItemDefinition
@@ -268,6 +288,21 @@ namespace BingoQuest.Demo
                     progression.Level,
                     enemyDefinition != null ? enemyDefinition.LootDropChance : 0.03f);
             };
+        }
+
+        private void Update()
+        {
+            if (allPresets == null)
+                return;
+
+            for (int i = 0; i < allPresets.Length && i < 4; i++)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
+                {
+                    DifficultyManager.Instance.SetPreset(allPresets[i]);
+                    break;
+                }
+            }
         }
 
         private static void SetCombatantPrivateFields(Combatant combatant, string id, bool isPlayer)

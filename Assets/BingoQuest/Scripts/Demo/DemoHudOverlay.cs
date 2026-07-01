@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using BingoQuest.Gameplay.Bingo;
 using BingoQuest.Gameplay.Combat;
+using BingoQuest.Gameplay.Difficulty;
 using BingoQuest.Gameplay.Loot;
 using BingoQuest.Gameplay.Progression;
 using UnityEngine;
@@ -48,10 +49,19 @@ namespace BingoQuest.Demo
         private void OnGUI()
         {
             GUI.color = Color.white;
-            GUILayout.BeginArea(new Rect(12, 12, 520, 760), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(12, 12, 520, 800), GUI.skin.box);
             GUILayout.Label("Bingo Quest Playable Demo");
-            GUILayout.Label("WASD move | Space attack | Q/W/E/R abilities | Shift dodge | L chest loot | B boss objective | N next region");
+            GUILayout.Label("WASD move | Space attack | Q/W/E/R abilities | Shift dodge | L chest loot | B boss objective | N next region | [1/2/3/4] difficulty");
             GUILayout.Label($"Region: {regionNameResolver?.Invoke() ?? "Unknown"}");
+
+            // Difficulty indicator
+            var preset = DifficultyManager.Instance?.CurrentPreset;
+            if (preset != null)
+            {
+                GUI.color = preset.PresetColor;
+                GUILayout.Label($"Difficulty: {preset.PresetName}");
+                GUI.color = Color.white;
+            }
 
             if (player != null)
             {
