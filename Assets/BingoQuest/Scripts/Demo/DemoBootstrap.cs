@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.IO;
 using System.Reflection;
 using BingoQuest.Gameplay.Bingo;
 using BingoQuest.Gameplay.Combat;
@@ -8,6 +9,7 @@ using BingoQuest.Gameplay.Difficulty;
 using BingoQuest.Gameplay.Loot;
 using BingoQuest.Gameplay.Objectives;
 using BingoQuest.Gameplay.Progression;
+using BingoQuest.Platform.Save;
 using UnityEngine;
 
 namespace BingoQuest.Demo
@@ -24,6 +26,7 @@ namespace BingoQuest.Demo
         private CharacterProgression progression;
         private AuthoredContentCatalog contentCatalog;
         private DifficultyPreset[] allPresets;
+        private ProfileManager profileManager;
         private Renderer floorRenderer;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -66,7 +69,12 @@ namespace BingoQuest.Demo
                 () => enemySpawner.GetAliveEnemyCount(),
                 () => inventory,
                 () => progression,
-                () => worldDirector != null ? worldDirector.CurrentRegionName : "Unknown");
+                () => worldDirector != null ? worldDirector.CurrentRegionName : "Unknown",
+                () => worldDirector != null ? worldDirector.CurrentEnemyHealthMultiplier : 1f,
+                () => worldDirector != null ? worldDirector.CurrentEnemyAttackMultiplier : 1f,
+                () => profileManager?.ActiveProfile?.DisplayName ?? "No Profile");
+
+            InitializeSaveSystem();
 
             yield return null;
 
@@ -193,6 +201,64 @@ namespace BingoQuest.Demo
             contentCatalog?.ApplyStarterSkills(progression);
         }
 
+        private void InitializeSaveSystem()
+        {
+            string saveDirectory = Path.Combine(Application.persistentDataPath, "BingoQuestDemo");
+            profileManager = new ProfileManager(new LocalFileSaveBackend(saveDirectory));
+
+            SaveProfile profile;
+            if (profileManager.Profiles.Count > 0)
+            {
+                var firstProfileId = profileManager.Profiles[0].ProfileId;
+                if (!profileManager.TryLoadProfile(firstProfileId, out profile))
+                    profile = profileManager.CreateProfile("Demo Hero");
+            }
+            else
+            {
+                profile = profileManager.CreateProfile("Demo Hero");
+            }
+
+            TryRestoreFromProfile(profile);
+        }
+
+        private void TryRestoreFromProfile(SaveProfile profile)
+        {
+            if (profile == null || progression == null || inventory == null)
+                return;
+
+            SaveSystemBridge.RestoreProgression(profile, progression);
+            SaveSystemBridge.RestoreInventory(profile, inventory);
+        }
+
+        private void SaveProfileSnapshot()
+        {
+            if (profileManager == null || progression == null || inventory == null)
+                return;
+
+            var profile = profileManager.ActiveProfile ?? profileManager.CreateProfile("Demo Hero");
+            SaveSystemBridge.CaptureCharacter(profile, progression, "player_demo", "Demo Hero");
+            SaveSystemBridge.CaptureInventory(profile, inventory);
+            profileManager.SaveProfile(profile);
+        }
+
+        private void ReloadProfileSnapshot()
+        {
+            if (profileManager == null)
+                return;
+
+            var profile = profileManager.ActiveProfile;
+            if (profile == null && profileManager.Profiles.Count > 0)
+            {
+                profileManager.TryLoadProfile(profileManager.Profiles[0].ProfileId, out profile);
+            }
+
+            if (profile == null)
+                return;
+
+            TryRestoreFromProfile(profile);
+            ConfigurePlayerStatsAndAbilities();
+        }
+
         private void CreateWorldDirector()
         {
             var worldGo = new GameObject("DemoWorldDirector");
@@ -292,17 +358,28 @@ namespace BingoQuest.Demo
 
         private void Update()
         {
-            if (allPresets == null)
-                return;
-
-            for (int i = 0; i < allPresets.Length && i < 4; i++)
+            if (allPresets != null)
             {
-                if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
+                for (int i = 0; i < allPresets.Length && i < 4; i++)
                 {
-                    DifficultyManager.Instance.SetPreset(allPresets[i]);
-                    break;
+                    if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
+                    {
+                        DifficultyManager.Instance.SetPreset(allPresets[i]);
+                        break;
+                    }
                 }
             }
+
+            if (Input.GetKeyDown(KeyCode.F5))
+                SaveProfileSnapshot();
+
+            if (Input.GetKeyDown(KeyCode.F9))
+                ReloadProfileSnapshot();
+        }
+
+        private void OnApplicationQuit()
+        {
+            SaveProfileSnapshot();
         }
 
         private static void SetCombatantPrivateFields(Combatant combatant, string id, bool isPlayer)

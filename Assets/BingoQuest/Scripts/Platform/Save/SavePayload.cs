@@ -18,6 +18,10 @@ namespace BingoQuest.Platform.Save
     {
         public string InstanceId { get; set; }
         public string ItemId { get; set; }
+        public string DisplayName { get; set; }
+        public int ItemType { get; set; }
+        public int ElementType { get; set; }
+        public int BasePower { get; set; }
         public int Rarity { get; set; }
         public int ItemLevel { get; set; }
         public int RolledPower { get; set; }

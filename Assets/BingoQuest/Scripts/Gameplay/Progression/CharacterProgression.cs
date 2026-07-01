@@ -166,6 +166,26 @@ namespace BingoQuest.Gameplay.Progression
 
         public void ForceSetSkillPoints(int points) => SkillPoints = points;
 
+        public void RecalculateBonusesFromUnlockedSkills()
+        {
+            statBonuses["health"] = 0;
+            statBonuses["attack"] = 0;
+            statBonuses["defense"] = 0;
+            floatBonuses["crit_chance"] = 0f;
+            floatBonuses["dodge_chance"] = 0f;
+
+            var unlocked = SkillTree.GetUnlockedNodes();
+            for (int i = 0; i < unlocked.Count; i++)
+            {
+                var node = unlocked[i];
+                statBonuses["health"] += node.HealthBonus;
+                statBonuses["attack"] += node.AttackBonus;
+                statBonuses["defense"] += node.DefenseBonus;
+                floatBonuses["crit_chance"] += node.CritChanceBonus;
+                floatBonuses["dodge_chance"] += node.DodgeChanceBonus;
+            }
+        }
+
         public int GetExperienceForNextLevel() => LevelUpThreshold - Experience;
 
         public float GetLevelProgress() => (float)Experience / LevelUpThreshold;

@@ -1,5 +1,7 @@
 using NUnit.Framework;
 using BingoQuest.Platform.Save;
+using BingoQuest.Gameplay.Loot;
+using BingoQuest.Gameplay.Progression;
 using System;
 
 namespace BingoQuest.Tests.EditMode
@@ -119,6 +121,77 @@ namespace BingoQuest.Tests.EditMode
             Assert.AreEqual("RoundTrip", loaded.DisplayName);
             Assert.AreEqual(12, loaded.Character.Level);
             Assert.AreEqual("true", loaded.Flags["tutorial_done"]);
+        }
+
+        [Test]
+        public void SaveSystemBridge_CaptureAndRestoreInventory_RoundTrips()
+        {
+            var profile = new SaveProfile
+            {
+                ProfileId = Guid.NewGuid().ToString("N"),
+                DisplayName = "BridgeTest",
+                SchemaVersion = SaveProfile.CurrentSchemaVersion,
+                CreatedAtUtc = DateTime.UtcNow,
+                LastSavedAtUtc = DateTime.UtcNow,
+            };
+
+            var sourceInventory = new Inventory();
+            sourceInventory.AddCurrency("fate_shards", 250);
+            sourceInventory.AddCurrency("hero_medals", 12);
+            sourceInventory.AddMaterial("ember_core", 4);
+
+            sourceInventory.AddItem(new ItemInstance
+            {
+                Definition = new ItemDefinition
+                {
+                    ItemId = "ember_staff",
+                    DisplayName = "Ember Staff",
+                    Type = ItemType.Weapon,
+                    BasePower = 10
+                },
+                Rarity = ItemRarity.Epic,
+                ItemLevel = 6,
+                RolledPower = 32
+            });
+
+            SaveSystemBridge.CaptureInventory(profile, sourceInventory);
+
+            var targetInventory = new Inventory();
+            SaveSystemBridge.RestoreInventory(profile, targetInventory);
+
+            Assert.AreEqual(1, targetInventory.Items.Count);
+            Assert.AreEqual("ember_staff", targetInventory.Items[0].Definition.ItemId);
+            Assert.AreEqual(250, targetInventory.Currencies["fate_shards"]);
+            Assert.AreEqual(12, targetInventory.Currencies["hero_medals"]);
+            Assert.AreEqual(4, targetInventory.Materials["ember_core"]);
+        }
+
+        [Test]
+        public void SaveSystemBridge_RestoreProgression_RebuildsUnlockedBonuses()
+        {
+            var profile = new SaveProfile
+            {
+                ProfileId = Guid.NewGuid().ToString("N"),
+                DisplayName = "ProgressBridgeTest",
+                SchemaVersion = SaveProfile.CurrentSchemaVersion,
+                CreatedAtUtc = DateTime.UtcNow,
+                LastSavedAtUtc = DateTime.UtcNow,
+            };
+
+            profile.Character.Level = 7;
+            profile.Character.Experience = 35;
+            profile.Character.SkillPoints = 2;
+            profile.Character.UnlockedSkillNodeIds.Add("slash");
+            profile.Character.UnlockedSkillNodeIds.Add("shield_bash");
+
+            var progression = new CharacterProgression(BuiltInClasses.Warrior, SkillTreeFactory.CreateWarriorTree());
+            SaveSystemBridge.RestoreProgression(profile, progression);
+
+            Assert.AreEqual(7, progression.Level);
+            Assert.IsTrue(progression.SkillTree.IsNodeUnlocked("slash"));
+            Assert.IsTrue(progression.SkillTree.IsNodeUnlocked("shield_bash"));
+            Assert.Greater(progression.GetStatBonus("attack"), 0);
+            Assert.Greater(progression.GetStatBonus("defense"), 0);
         }
     }
 }

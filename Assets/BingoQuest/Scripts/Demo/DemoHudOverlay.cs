@@ -16,20 +16,30 @@ namespace BingoQuest.Demo
         private Func<Inventory> inventoryResolver;
         private Func<CharacterProgression> progressionResolver;
         private Func<string> regionNameResolver;
+        private Func<float> regionEnemyHealthMultiplierResolver;
+        private Func<float> regionEnemyAttackMultiplierResolver;
+        private Func<string> saveProfileNameResolver;
         private string lastPattern = "None";
+        private bool showBalanceDashboard = true;
 
         public void Bind(
             Combatant combatant,
             Func<int> enemyCount,
             Func<Inventory> inventory,
             Func<CharacterProgression> progression,
-            Func<string> regionName = null)
+            Func<string> regionName = null,
+            Func<float> regionEnemyHealthMultiplier = null,
+            Func<float> regionEnemyAttackMultiplier = null,
+            Func<string> saveProfileName = null)
         {
             player = combatant;
             aliveEnemyCount = enemyCount;
             inventoryResolver = inventory;
             progressionResolver = progression;
             regionNameResolver = regionName;
+            regionEnemyHealthMultiplierResolver = regionEnemyHealthMultiplier;
+            regionEnemyAttackMultiplierResolver = regionEnemyAttackMultiplier;
+            saveProfileNameResolver = saveProfileName;
 
             if (BingoSystem.Instance != null)
                 BingoSystem.Instance.OnPatternDetected += OnPatternDetected;
@@ -48,11 +58,16 @@ namespace BingoQuest.Demo
 
         private void OnGUI()
         {
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.F3)
+                showBalanceDashboard = !showBalanceDashboard;
+
             GUI.color = Color.white;
-            GUILayout.BeginArea(new Rect(12, 12, 520, 800), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(12, 12, 520, 940), GUI.skin.box);
             GUILayout.Label("Bingo Quest Playable Demo");
-            GUILayout.Label("WASD move | Space attack | Q/W/E/R abilities | Shift dodge | L chest loot | B boss objective | N next region | [1/2/3/4] difficulty");
+            GUILayout.Label("WASD move | Space attack | Q/W/E/R abilities | Shift dodge | L chest loot | B boss objective | N next region");
+            GUILayout.Label("[1/2/3/4] difficulty | F3 balance dashboard | F5 save | F9 load");
             GUILayout.Label($"Region: {regionNameResolver?.Invoke() ?? "Unknown"}");
+            GUILayout.Label($"Save Profile: {saveProfileNameResolver?.Invoke() ?? "No Profile"}");
 
             // Difficulty indicator
             var preset = DifficultyManager.Instance?.CurrentPreset;
@@ -114,7 +129,35 @@ namespace BingoQuest.Demo
                 GUILayout.Label(sb.Length == 0 ? "Currencies: None" : $"Currencies: {sb}");
             }
 
+            if (showBalanceDashboard)
+            {
+                DrawBalanceDashboard();
+            }
+
             GUILayout.EndArea();
+        }
+
+        private void DrawBalanceDashboard()
+        {
+            GUILayout.Space(8);
+            GUILayout.Label("Balance Dashboard");
+
+            var manager = DifficultyManager.Instance;
+            var preset = manager?.CurrentPreset;
+            var mode = manager != null ? manager.GetDifficultyMode() : Progression.DifficultyMode.Normal;
+            float difficultyMultiplier = manager?.GetBalanceConfig()?.GetDifficultyMultiplier(mode) ?? 1f;
+            float cooldownMultiplier = manager?.GetAbilityConfig()?.GetDifficultyCooldownMultiplier(mode) ?? 1f;
+            float xpMultiplier = manager?.GetProgressionConfig()?.GetDifficultyXPMultiplier(mode) ?? 1f;
+
+            float regionHp = regionEnemyHealthMultiplierResolver?.Invoke() ?? 1f;
+            float regionAtk = regionEnemyAttackMultiplierResolver?.Invoke() ?? 1f;
+
+            GUILayout.Label($"Preset: {preset?.PresetName ?? "None"} ({mode})");
+            GUILayout.Label($"Enemy Difficulty Mult: {difficultyMultiplier:F2}x");
+            GUILayout.Label($"Region HP/ATK Mult: {regionHp:F2}x / {regionAtk:F2}x");
+            GUILayout.Label($"Effective Enemy HP/ATK: {(regionHp * difficultyMultiplier):F2}x / {(regionAtk * difficultyMultiplier):F2}x");
+            GUILayout.Label($"XP Multiplier: {xpMultiplier:F2}x");
+            GUILayout.Label($"Cooldown Multiplier: {cooldownMultiplier:F2}x");
         }
 
         private static string FormatAbility(ActionBar bar, AbilitySlot slot)
