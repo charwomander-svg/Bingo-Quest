@@ -23,10 +23,12 @@ namespace BingoQuest.Tests.EditMode
         {
             Assert.That(catalog.Library.GetEnemyCount, Is.EqualTo(9));
             Assert.That(catalog.Library.GetBossCount, Is.EqualTo(3));
-            Assert.That(catalog.Library.GetAbilityPoolCount, Is.EqualTo(3));
+            Assert.That(catalog.Library.GetAbilityPoolCount, Is.EqualTo(5));
             Assert.That(catalog.Library.GetObjectivePoolCount, Is.EqualTo(3));
             Assert.That(catalog.GetRegionProfile("whispering_forest"), Is.Not.Null);
             Assert.That(catalog.GetClassDefinition("mage"), Is.Not.Null);
+            Assert.That(catalog.GetClassDefinition("rogue"), Is.Not.Null);
+            Assert.That(catalog.GetClassDefinition("cleric"), Is.Not.Null);
         }
 
         [Test]
@@ -60,6 +62,21 @@ namespace BingoQuest.Tests.EditMode
         }
 
         [Test]
+        public void CreateStartingAbilities_RogueAndClericHaveLoadouts()
+        {
+            var rogueAbilities = catalog.CreateStartingAbilities("rogue");
+            var clericAbilities = catalog.CreateStartingAbilities("cleric");
+
+            Assert.That(rogueAbilities.Count, Is.EqualTo(4));
+            Assert.That(rogueAbilities[0].Definition.Name, Is.EqualTo("Quick Stab"));
+            Assert.That(rogueAbilities[3].Definition.Name, Is.EqualTo("Assassinate"));
+
+            Assert.That(clericAbilities.Count, Is.EqualTo(4));
+            Assert.That(clericAbilities[0].Definition.Name, Is.EqualTo("Smite"));
+            Assert.That(clericAbilities[3].Definition.Name, Is.EqualTo("Divine Judgment"));
+        }
+
+        [Test]
         public void CreateObjectivesForContext_ReturnsFullCardSet()
         {
             var objectives = catalog.CreateObjectivesForContext(new ObjectiveContext
@@ -90,6 +107,21 @@ namespace BingoQuest.Tests.EditMode
             Assert.That(progression.SkillTree.IsNodeUnlocked("slash"), Is.True);
             Assert.That(progression.SkillTree.IsNodeUnlocked("shield_bash"), Is.True);
             Assert.That(progression.SkillPoints, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ApplyStarterSkills_UnlocksRogueAndClericStarterNodes()
+        {
+            var rogueProgression = new CharacterProgression(BuiltInClasses.Rogue, catalog.CreateSkillTree("rogue"));
+            var clericProgression = new CharacterProgression(BuiltInClasses.Cleric, catalog.CreateSkillTree("cleric"));
+
+            catalog.ApplyStarterSkills(rogueProgression);
+            catalog.ApplyStarterSkills(clericProgression);
+
+            Assert.That(rogueProgression.SkillTree.IsNodeUnlocked("quick_stab"), Is.True);
+            Assert.That(rogueProgression.SkillTree.IsNodeUnlocked("smoke_bomb"), Is.True);
+            Assert.That(clericProgression.SkillTree.IsNodeUnlocked("smite"), Is.True);
+            Assert.That(clericProgression.SkillTree.IsNodeUnlocked("healing_prayer"), Is.True);
         }
 
         [Test]

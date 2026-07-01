@@ -96,6 +96,10 @@ namespace BingoQuest.Gameplay.Content
                     return SkillTreeFactory.CreateMageTree();
                 case "ranger":
                     return SkillTreeFactory.CreateRangerTree();
+                case "rogue":
+                    return SkillTreeFactory.CreateRogueTree();
+                case "cleric":
+                    return SkillTreeFactory.CreateClericTree();
                 case "warrior":
                 default:
                     return SkillTreeFactory.CreateWarriorTree();
@@ -352,6 +356,106 @@ namespace BingoQuest.Gameplay.Content
                     DamageScale = 2.8f,
                     PreferredSlot = AbilitySlot.Ultimate
                 }));
+
+            RegisterAbilityPool(CreateAbilityPool(
+                "rogue_loadout",
+                "rogue",
+                new AbilityDefinitionData
+                {
+                    AbilityId = "ability_quick_stab",
+                    Name = "Quick Stab",
+                    Description = "Rapid dagger combo with high crit pressure.",
+                    Cooldown = 0.45f,
+                    DamageScale = 1.25f,
+                    PreferredSlot = AbilitySlot.Primary
+                },
+                new AbilityDefinitionData
+                {
+                    AbilityId = "ability_smoke_bomb",
+                    Name = "Smoke Bomb",
+                    Description = "Disorient enemies and create an opening.",
+                    Cooldown = 2.0f,
+                    DamageScale = 0.75f,
+                    PreferredSlot = AbilitySlot.Secondary,
+                    AppliesStatusEffect = true,
+                    StatusEffectType = StatusEffectType.Curse,
+                    StatusEffectChance = 60,
+                    IsAOE = true,
+                    AOERadius = 4.0f
+                },
+                new AbilityDefinitionData
+                {
+                    AbilityId = "ability_venom_blade",
+                    Name = "Venom Blade",
+                    Description = "Toxic strike that applies stacking poison.",
+                    Cooldown = 1.8f,
+                    DamageScale = 1.65f,
+                    ElementType = ElementType.Poison,
+                    PreferredSlot = AbilitySlot.Tertiary,
+                    AppliesStatusEffect = true,
+                    StatusEffectType = StatusEffectType.Poison,
+                    StatusEffectChance = 70
+                },
+                new AbilityDefinitionData
+                {
+                    AbilityId = "ability_assassinate",
+                    Name = "Assassinate",
+                    Description = "High-damage execution strike from the shadows.",
+                    Cooldown = 5.4f,
+                    DamageScale = 3.1f,
+                    PreferredSlot = AbilitySlot.Ultimate
+                }));
+
+            RegisterAbilityPool(CreateAbilityPool(
+                "cleric_loadout",
+                "cleric",
+                new AbilityDefinitionData
+                {
+                    AbilityId = "ability_smite",
+                    Name = "Smite",
+                    Description = "Focused holy damage against a single target.",
+                    Cooldown = 0.85f,
+                    DamageScale = 1.3f,
+                    ElementType = ElementType.Holy,
+                    PreferredSlot = AbilitySlot.Primary
+                },
+                new AbilityDefinitionData
+                {
+                    AbilityId = "ability_healing_prayer",
+                    Name = "Healing Prayer",
+                    Description = "Restorative pulse that keeps the run alive.",
+                    Cooldown = 2.6f,
+                    DamageScale = 0.85f,
+                    ElementType = ElementType.Holy,
+                    PreferredSlot = AbilitySlot.Secondary
+                },
+                new AbilityDefinitionData
+                {
+                    AbilityId = "ability_consecration",
+                    Name = "Consecration",
+                    Description = "Blessed ground that harms enemies over time.",
+                    Cooldown = 3.3f,
+                    DamageScale = 1.5f,
+                    ElementType = ElementType.Holy,
+                    PreferredSlot = AbilitySlot.Tertiary,
+                    AppliesStatusEffect = true,
+                    StatusEffectType = StatusEffectType.Burn,
+                    StatusEffectChance = 45,
+                    IsAOE = true,
+                    AOERadius = 5.0f
+                },
+                new AbilityDefinitionData
+                {
+                    AbilityId = "ability_divine_judgment",
+                    Name = "Divine Judgment",
+                    Description = "Call down holy wrath in a large burst.",
+                    Cooldown = 6.1f,
+                    DamageScale = 3.0f,
+                    ElementType = ElementType.Holy,
+                    PreferredSlot = AbilitySlot.Ultimate,
+                    IsAOE = true,
+                    AOERadius = 6.0f
+                }));
         }
 
         private void RegisterDefaultEnemies()
@@ -443,6 +547,30 @@ namespace BingoQuest.Gameplay.Content
             ranger.AutoUnlockOrder.Add("aimed_shot");
             ranger.AutoUnlockOrder.Add("multishot");
             _classProfiles[ranger.ClassId] = ranger;
+
+            var rogue = new ClassContentProfile
+            {
+                ClassId = "rogue",
+                AbilityPoolId = "rogue_loadout"
+            };
+            rogue.StarterSkillNodeIds.Add("quick_stab");
+            rogue.StarterSkillNodeIds.Add("smoke_bomb");
+            rogue.AutoUnlockOrder.Add("shadowstep");
+            rogue.AutoUnlockOrder.Add("venom_blade");
+            rogue.AutoUnlockOrder.Add("assassinate");
+            _classProfiles[rogue.ClassId] = rogue;
+
+            var cleric = new ClassContentProfile
+            {
+                ClassId = "cleric",
+                AbilityPoolId = "cleric_loadout"
+            };
+            cleric.StarterSkillNodeIds.Add("smite");
+            cleric.StarterSkillNodeIds.Add("healing_prayer");
+            cleric.AutoUnlockOrder.Add("consecration");
+            cleric.AutoUnlockOrder.Add("guardian_aegis");
+            cleric.AutoUnlockOrder.Add("divine_judgment");
+            _classProfiles[cleric.ClassId] = cleric;
 
             RegisterRegionProfile(new RegionContentProfile
             {

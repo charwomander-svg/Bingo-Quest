@@ -303,5 +303,131 @@ namespace BingoQuest.Gameplay.Progression
 
             return tree;
         }
+
+        public static SkillTree CreateRogueTree()
+        {
+            var tree = new SkillTree();
+
+            tree.AddNode(new SkillNode("quick_stab", "Quick Stab")
+            {
+                DisplayName = "Quick Stab",
+                Description = "Fast dagger strike with high crit potential",
+                PointCost = 1,
+                MinimumLevel = 1,
+                AttackBonus = 3,
+                CritChanceBonus = 0.08f,
+                UnlocksAbilityId = "ability_quick_stab"
+            });
+
+            tree.AddNode(new SkillNode("smoke_bomb", "Smoke Bomb")
+            {
+                DisplayName = "Smoke Bomb",
+                Description = "Create cover and slip out of danger",
+                PointCost = 1,
+                MinimumLevel = 1,
+                Prerequisites = new() { "quick_stab" },
+                DodgeChanceBonus = 0.12f,
+                UnlocksAbilityId = "ability_smoke_bomb"
+            });
+
+            tree.AddNode(new SkillNode("shadowstep", "Shadowstep")
+            {
+                DisplayName = "Shadowstep",
+                Description = "Blink behind enemies for bonus damage",
+                PointCost = 2,
+                MinimumLevel = 4,
+                Prerequisites = new() { "quick_stab", "smoke_bomb" },
+                AttackBonus = 4,
+                DodgeChanceBonus = 0.08f,
+                UnlocksAbilityId = "ability_shadowstep"
+            });
+
+            tree.AddNode(new SkillNode("venom_blade", "Venom Blade")
+            {
+                DisplayName = "Venom Blade",
+                Description = "Coat blades with poison",
+                PointCost = 2,
+                MinimumLevel = 6,
+                Prerequisites = new() { "shadowstep" },
+                AttackBonus = 3,
+                UnlocksAbilityId = "ability_venom_blade"
+            });
+
+            tree.AddNode(new SkillNode("assassinate", "Assassinate")
+            {
+                DisplayName = "Assassinate",
+                Description = "Devastating finisher against weakened targets",
+                PointCost = 3,
+                MinimumLevel = 10,
+                Prerequisites = new() { "venom_blade" },
+                AttackBonus = 9,
+                CritChanceBonus = 0.2f,
+                UnlocksAbilityId = "ability_assassinate"
+            });
+
+            return tree;
+        }
+
+        public static SkillTree CreateClericTree()
+        {
+            var tree = new SkillTree();
+
+            tree.AddNode(new SkillNode("smite", "Smite")
+            {
+                DisplayName = "Smite",
+                Description = "Holy strike that punishes corrupted foes",
+                PointCost = 1,
+                MinimumLevel = 1,
+                AttackBonus = 2,
+                UnlocksAbilityId = "ability_smite"
+            });
+
+            tree.AddNode(new SkillNode("healing_prayer", "Healing Prayer")
+            {
+                DisplayName = "Healing Prayer",
+                Description = "Restore vitality through divine light",
+                PointCost = 1,
+                MinimumLevel = 1,
+                Prerequisites = new() { "smite" },
+                DefenseBonus = 2,
+                UnlocksAbilityId = "ability_healing_prayer"
+            });
+
+            tree.AddNode(new SkillNode("consecration", "Consecration")
+            {
+                DisplayName = "Consecration",
+                Description = "Bless an area with sustained holy damage",
+                PointCost = 2,
+                MinimumLevel = 5,
+                Prerequisites = new() { "smite", "healing_prayer" },
+                AttackBonus = 3,
+                DefenseBonus = 2,
+                UnlocksAbilityId = "ability_consecration"
+            });
+
+            tree.AddNode(new SkillNode("guardian_aegis", "Guardian Aegis")
+            {
+                DisplayName = "Guardian Aegis",
+                Description = "Protective ward that hardens your defenses",
+                PointCost = 2,
+                MinimumLevel = 7,
+                Prerequisites = new() { "healing_prayer" },
+                DefenseBonus = 6,
+                UnlocksAbilityId = "ability_guardian_aegis"
+            });
+
+            tree.AddNode(new SkillNode("divine_judgment", "Divine Judgment")
+            {
+                DisplayName = "Divine Judgment",
+                Description = "Call down a final burst of holy wrath",
+                PointCost = 3,
+                MinimumLevel = 12,
+                Prerequisites = new() { "consecration", "guardian_aegis" },
+                AttackBonus = 8,
+                UnlocksAbilityId = "ability_divine_judgment"
+            });
+
+            return tree;
+        }
     }
 }
