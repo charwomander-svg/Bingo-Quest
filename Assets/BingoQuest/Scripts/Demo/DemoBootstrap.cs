@@ -28,6 +28,10 @@ namespace BingoQuest.Demo
         private DifficultyPreset[] allPresets;
         private ProfileManager profileManager;
         private Renderer floorRenderer;
+        private PatternRewardToast rewardToast;
+        private string selectedClassId = "warrior";
+        private bool bossAlive;
+        private readonly System.Collections.Generic.HashSet<BingoPattern> appliedPatternRewards = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoSpawn()
@@ -44,9 +48,15 @@ namespace BingoQuest.Demo
             floorRenderer = EnsureCameraAndWorldGeometry();
             EnsureCoreSystems();
 
+            // Step 1: Class selection
+            var classSelector = gameObject.AddComponent<ClassSelectorUI>();
+            yield return new WaitUntil(() => classSelector.HasSelected);
+            selectedClassId = classSelector.SelectedClassId ?? "warrior";
+            Destroy(classSelector);
+
             allPresets = DifficultyPresetFactory.CreateAll();
 
-            // Show difficulty selector and wait for the player to pick
+            // Step 2: Difficulty selection
             var selector = gameObject.AddComponent<DifficultySelectorUI>();
             selector.SetPresets(allPresets);
             yield return new WaitUntil(() => selector.HasSelected);
@@ -75,6 +85,11 @@ namespace BingoQuest.Demo
                 () => profileManager?.ActiveProfile?.DisplayName ?? "No Profile");
 
             gameObject.AddComponent<BingoCardOverlay>();
+            rewardToast = gameObject.AddComponent<PatternRewardToast>();
+
+            // Subscribe pattern rewards
+            if (BingoSystem.Instance != null)
+                BingoSystem.Instance.OnPatternDetected += OnPatternDetected;
 
             InitializeSaveSystem();
 
@@ -196,8 +211,8 @@ namespace BingoQuest.Demo
 
         private void CreateProgression()
         {
-            var classDefinition = contentCatalog != null ? contentCatalog.GetClassDefinition("warrior") : BuiltInClasses.Warrior;
-            var tree = contentCatalog != null ? contentCatalog.CreateSkillTree("warrior") : SkillTreeFactory.CreateWarriorTree();
+            var classDefinition = contentCatalog != null ? contentCatalog.GetClassDefinition(selectedClassId) : BuiltInClasses.Warrior;
+            var tree = contentCatalog != null ? contentCatalog.CreateSkillTree(selectedClassId) : SkillTreeFactory.CreateWarriorTree();
             var progressionConfig = DifficultyManager.Instance.GetProgressionConfig();
             progression = new CharacterProgression(classDefinition, tree, progressionConfig);
             contentCatalog?.ApplyStarterSkills(progression);
@@ -281,7 +296,7 @@ namespace BingoQuest.Demo
             playerCombatant.Stats.ElementalPower = 6;
 
             var abilityConfig = DifficultyManager.Instance.GetAbilityConfig();
-            var abilities = contentCatalog != null ? contentCatalog.CreateStartingAbilities("warrior", abilityConfig) : new System.Collections.Generic.List<Ability>();
+            var abilities = contentCatalog != null ? contentCatalog.CreateStartingAbilities(selectedClassId, abilityConfig) : new System.Collections.Generic.List<Ability>();
             if (abilities.Count > 0)
             {
                 for (int i = 0; i < abilities.Count && i < 4; i++)
@@ -377,6 +392,149 @@ namespace BingoQuest.Demo
 
             if (Input.GetKeyDown(KeyCode.F9))
                 ReloadProfileSnapshot();
+
+            if (Input.GetKeyDown(KeyCode.B))
+                SpawnBoss();
+        }
+
+        private void OnDestroy()
+        {
+            if (BingoSystem.Instance != null)
+                BingoSystem.Instance.OnPatternDetected -= OnPatternDetected;
+        }
+
+        private void SpawnBoss()
+        {
+            if (bossAlive)
+            {
+                rewardToast?.AddToast("A boss is already active!", new Color(1f, 0.4f, 0.4f));
+                return;
+            }
+
+            string regionId = worldDirector?.CurrentRegionId ?? "whispering_forest";
+            var bossDef = contentCatalog?.GetBossForRegion(regionId);
+
+            string bossName  = bossDef != null ? bossDef.DisplayName : "Void Tyrant";
+            Color  bossColor = bossDef != null ? bossDef.Tint : new Color(0.75f, 0.08f, 0.08f);
+
+            // Spawn as oversized capsule in front of player
+            var bossGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            bossGo.name = bossName;
+            var spawnPos = playerCombatant != null
+                ? playerCombatant.transform.position + playerCombatant.transform.forward * 8f
+                : new Vector3(8f, 1.5f, 0f);
+            spawnPos.y = 1.5f;
+            bossGo.transform.position = spawnPos;
+            bossGo.transform.localScale = new Vector3(2.2f, 2.8f, 2.2f);
+
+            var bossRenderer = bossGo.GetComponent<Renderer>();
+            if (bossRenderer != null)
+                bossRenderer.material.color = bossColor;
+
+            var bossCombatant = bossGo.AddComponent<Combatant>();
+            SetCombatantPrivateFields(bossCombatant, bossDef?.BossId ?? "boss_demo", false);
+
+            // Build stats with difficulty + region scaling
+            CharacterStats stats;
+            if (bossDef != null)
+            {
+                stats = ContentFactory.CreateStatsFromBoss(bossDef);
+            }
+            else
+            {
+                stats = new CharacterStats
+                { MaxHealth = 500, Health = 500, Attack = 32, Defense = 12, CritChance = 0.12f, DodgeChance = 0.06f };
+            }
+
+            var balanceConfig = DifficultyManager.Instance.GetBalanceConfig();
+            var diffMode      = DifficultyManager.Instance.GetDifficultyMode();
+            float diffMult    = balanceConfig != null ? balanceConfig.GetDifficultyMultiplier(diffMode) : 1f;
+            float hpMult      = worldDirector != null ? worldDirector.CurrentEnemyHealthMultiplier : 1f;
+            float atkMult     = worldDirector != null ? worldDirector.CurrentEnemyAttackMultiplier : 1f;
+
+            bossCombatant.Stats.MaxHealth = Mathf.RoundToInt(stats.MaxHealth * diffMult * hpMult);
+            bossCombatant.Stats.Health    = bossCombatant.Stats.MaxHealth;
+            bossCombatant.Stats.Attack    = Mathf.RoundToInt(stats.Attack   * diffMult * atkMult);
+            bossCombatant.Stats.Defense   = stats.Defense;
+            bossCombatant.Stats.CritChance  = stats.CritChance;
+            bossCombatant.Stats.DodgeChance = stats.DodgeChance;
+
+            var brain = bossGo.AddComponent<DemoEnemyBrain>();
+            brain.Initialize(bossCombatant, playerCombatant);
+
+            bossAlive = true;
+            rewardToast?.AddToast($"⚠  {bossName} has appeared! [{bossCombatant.Stats.MaxHealth} HP]",
+                new Color(1f, 0.3f, 0.3f));
+
+            int bossXp       = bossDef != null ? bossDef.ExperienceReward : 200;
+            var bossRewardDef = contentCatalog?.CreateBossRewardDefinition(bossDef)
+                ?? new ItemDefinition { ItemId = "boss_trophy", DisplayName = "Boss Trophy", Type = ItemType.Accessory, BasePower = 25 };
+
+            bossCombatant.OnDefeated += () =>
+            {
+                bossAlive = false;
+                progression.GainExperience(bossXp);
+                lootService.DropEnemyLoot(bossRewardDef, progression.Level, 1f);
+                rewardToast?.AddToast($"⚔  {bossName} defeated! +{bossXp} XP  •  Relic dropped!",
+                    new Color(0.3f, 1f, 0.5f));
+            };
+        }
+
+        private void OnPatternDetected(BingoPattern pattern)
+        {
+            if (appliedPatternRewards.Contains(pattern)) return;
+            appliedPatternRewards.Add(pattern);
+
+            if (playerCombatant == null) return;
+            var s = playerCombatant.Stats;
+            string msg;
+            Color accent;
+
+            switch (pattern)
+            {
+                case BingoPattern.Row:
+                    s.ElementalPower += 20;
+                    msg    = "ROW BINGO!  ★  +20 Elemental Power";
+                    accent = new Color(0.9f, 0.5f, 0.1f);
+                    break;
+                case BingoPattern.Column:
+                    s.DodgeChance = Mathf.Min(0.80f, s.DodgeChance + 0.10f);
+                    msg    = "COLUMN BINGO!  ★  +10% Dodge Chance";
+                    accent = new Color(0.3f, 0.7f, 1.0f);
+                    break;
+                case BingoPattern.DiagonalLeft:
+                    s.CritChance = Mathf.Min(0.90f, s.CritChance + 0.15f);
+                    msg    = "DIAGONAL BINGO!  ★  +15% Crit Chance";
+                    accent = new Color(0.8f, 0.2f, 0.9f);
+                    break;
+                case BingoPattern.DiagonalRight:
+                    s.Attack = Mathf.RoundToInt(s.Attack * 1.15f);
+                    msg    = "DIAGONAL BINGO!  ★  +15% Attack Power";
+                    accent = new Color(1.0f, 0.4f, 0.4f);
+                    break;
+                case BingoPattern.Corners:
+                    int hpGain = Mathf.Max(30, s.MaxHealth / 5);
+                    s.MaxHealth += hpGain;
+                    s.Health     = Mathf.Min(s.MaxHealth, s.Health + hpGain);
+                    msg    = $"CORNERS BINGO!  ★  +{hpGain} Max HP (healed)";
+                    accent = new Color(0.3f, 0.9f, 0.4f);
+                    break;
+                case BingoPattern.FullCard:
+                    s.Attack     = Mathf.RoundToInt(s.Attack * 1.5f);
+                    s.MaxHealth  = Mathf.RoundToInt(s.MaxHealth * 1.3f);
+                    s.Health     = s.MaxHealth;
+                    s.CritChance = Mathf.Min(0.90f, s.CritChance + 0.25f);
+                    s.ElementalPower += 40;
+                    msg    = "★ FULL HOUSE ★  BINGO AVATAR OVERDRIVE!";
+                    accent = new Color(1f, 0.9f, 0.1f);
+                    break;
+                default:
+                    msg    = $"{pattern} Bingo! Bonus awarded";
+                    accent = new Color(1f, 0.85f, 0.2f);
+                    break;
+            }
+
+            rewardToast?.AddToast(msg, accent);
         }
 
         private void OnApplicationQuit()
