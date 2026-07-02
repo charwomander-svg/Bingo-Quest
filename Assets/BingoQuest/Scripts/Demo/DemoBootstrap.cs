@@ -74,6 +74,8 @@ namespace BingoQuest.Demo
                 () => worldDirector != null ? worldDirector.CurrentEnemyAttackMultiplier : 1f,
                 () => profileManager?.ActiveProfile?.DisplayName ?? "No Profile");
 
+            gameObject.AddComponent<BingoCardOverlay>();
+
             InitializeSaveSystem();
 
             yield return null;

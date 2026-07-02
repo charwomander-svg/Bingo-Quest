@@ -65,7 +65,7 @@ namespace BingoQuest.Demo
             GUILayout.BeginArea(new Rect(12, 12, 520, 940), GUI.skin.box);
             GUILayout.Label("Bingo Quest Playable Demo");
             GUILayout.Label("WASD move | Space attack | Q/W/E/R abilities | Shift dodge | L chest loot | B boss objective | N next region");
-            GUILayout.Label("[1/2/3/4] difficulty | F3 balance dashboard | F5 save | F9 load");
+            GUILayout.Label("[1/2/3/4] difficulty | F3 balance dashboard | F5 save | F9 load | C bingo card");
             GUILayout.Label($"Region: {regionNameResolver?.Invoke() ?? "Unknown"}");
             GUILayout.Label($"Save Profile: {saveProfileNameResolver?.Invoke() ?? "No Profile"}");
 
