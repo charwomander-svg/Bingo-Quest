@@ -32,13 +32,16 @@ namespace BingoQuest.Gameplay.Combat
         public event Action<Combatant, DamageResult> OnDamageTaken;
         public event Action<Combatant, DamageResult> OnDamageDealt;
 
+        private void Awake()
+        {
+            stats ??= new CharacterStats();
+            actionBar ??= new ActionBar();
+            statusEffects ??= new StatusEffectManager();
+            nextAutoAttackTime = 0;
+        }
+
         private void Start()
         {
-            stats = new CharacterStats();
-            actionBar = new ActionBar();
-            statusEffects = new StatusEffectManager();
-            nextAutoAttackTime = 0;
-
             // Auto-register for status effect display in case we want to visualize
             if (!isPlayer)
                 gameObject.name = $"Enemy({combatantId})";
