@@ -317,6 +317,10 @@ namespace BingoQuest.Demo
 
         private static void OnRegionObjectiveContextReady(ObjectiveContext context)
         {
+            var bootstrap = FindObjectOfType<DemoBootstrap>();
+            if (bootstrap != null)
+                bootstrap.ResetRunRewards();
+
             if (BingoSystem.Instance != null)
                 BingoSystem.Instance.GenerateNewRun(context);
         }
@@ -420,8 +424,14 @@ namespace BingoQuest.Demo
             // Spawn as oversized capsule in front of player
             var bossGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             bossGo.name = bossName;
+            var spawnDirection = playerCombatant != null && Camera.main != null
+                ? Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized
+                : Vector3.forward;
+            if (spawnDirection.sqrMagnitude < 0.01f)
+                spawnDirection = Vector3.forward;
+
             var spawnPos = playerCombatant != null
-                ? playerCombatant.transform.position + playerCombatant.transform.forward * 8f
+                ? playerCombatant.transform.position + spawnDirection * 8f
                 : new Vector3(8f, 1.5f, 0f);
             spawnPos.y = 1.5f;
             bossGo.transform.position = spawnPos;
@@ -535,6 +545,12 @@ namespace BingoQuest.Demo
             }
 
             rewardToast?.AddToast(msg, accent);
+        }
+
+        private void ResetRunRewards()
+        {
+            appliedPatternRewards.Clear();
+            bossAlive = false;
         }
 
         private void OnApplicationQuit()
