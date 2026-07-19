@@ -239,7 +239,7 @@ namespace BingoQuest.Gameplay.Content
                     DamageScale = 1.1f,
                     PreferredSlot = AbilitySlot.Secondary,
                     AppliesStatusEffect = true,
-                    StatusEffectType = StatusEffectType.Stun,
+                    StatusEffectType = StatusEffectType.Shock,
                     StatusEffectChance = 55
                 },
                 new AbilityDefinitionData
