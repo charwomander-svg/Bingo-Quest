@@ -39,7 +39,7 @@ namespace BingoQuest.Gameplay.Progression
             DisplayName = name;
         }
 
-        public bool CanUnlock(int currentLevel, int availablePoints, Dictionary<string, bool> unlockedNodes)
+        public bool CanUnlock(int currentLevel, int availablePoints, IReadOnlyDictionary<string, bool> unlockedNodes)
         {
             // Check level requirement
             if (currentLevel < MinimumLevel)
