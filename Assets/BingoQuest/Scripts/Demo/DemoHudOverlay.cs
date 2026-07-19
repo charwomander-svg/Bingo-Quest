@@ -64,7 +64,7 @@ namespace BingoQuest.Demo
             GUI.color = Color.white;
             GUILayout.BeginArea(new Rect(12, 12, 520, 940), GUI.skin.box);
             GUILayout.Label("Bingo Quest Playable Demo");
-            GUILayout.Label("WASD move | Space attack | Q/W/E/R abilities | Shift dodge | L chest loot | B boss | N next region");
+            GUILayout.Label("WASD move | Space attack | Q/E/R/F abilities | Shift dodge | L chest loot | B boss | N next region");
             GUILayout.Label("[1/2/3/4] difficulty | F3 balance dashboard | F5 save | F9 load | C bingo card");
             GUILayout.Label($"Region: {regionNameResolver?.Invoke() ?? "Unknown"}");
             GUILayout.Label($"Save Profile: {saveProfileNameResolver?.Invoke() ?? "No Profile"}");
@@ -88,9 +88,9 @@ namespace BingoQuest.Demo
                 if (actionBar != null)
                 {
                     GUILayout.Label($"Q {FormatAbility(actionBar, AbilitySlot.Primary)}");
-                    GUILayout.Label($"W {FormatAbility(actionBar, AbilitySlot.Secondary)}");
-                    GUILayout.Label($"E {FormatAbility(actionBar, AbilitySlot.Tertiary)}");
-                    GUILayout.Label($"R {FormatAbility(actionBar, AbilitySlot.Ultimate)}");
+                    GUILayout.Label($"E {FormatAbility(actionBar, AbilitySlot.Secondary)}");
+                    GUILayout.Label($"R {FormatAbility(actionBar, AbilitySlot.Tertiary)}");
+                    GUILayout.Label($"F {FormatAbility(actionBar, AbilitySlot.Ultimate)}");
                 }
             }
 

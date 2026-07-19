@@ -49,11 +49,11 @@ namespace BingoQuest.Demo
 
             if (hasTarget && Input.GetKeyDown(KeyCode.Q))
                 combatant.ExecuteAbility(AbilitySlot.Primary, target);
-            if (hasTarget && Input.GetKeyDown(KeyCode.W))
-                combatant.ExecuteAbility(AbilitySlot.Secondary, target);
             if (hasTarget && Input.GetKeyDown(KeyCode.E))
-                combatant.ExecuteAbility(AbilitySlot.Tertiary, target);
+                combatant.ExecuteAbility(AbilitySlot.Secondary, target);
             if (hasTarget && Input.GetKeyDown(KeyCode.R))
+                combatant.ExecuteAbility(AbilitySlot.Tertiary, target);
+            if (hasTarget && Input.GetKeyDown(KeyCode.F))
                 combatant.ExecuteAbility(AbilitySlot.Ultimate, target);
 
             if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift))

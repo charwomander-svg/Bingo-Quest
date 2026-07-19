@@ -21,7 +21,7 @@ This repository includes a code-driven vertical slice bootstrap for testing the 
 |---|---|
 | Move | `WASD` |
 | Basic attack | `Space` |
-| Abilities | `Q`, `W`, `E`, `R` |
+| Abilities | `Q`, `E`, `R`, `F` |
 | Dodge objective trigger | `Left Shift` / `Right Shift` |
 | Open chest loot | `L` |
 | Spawn regional boss | `B` |
