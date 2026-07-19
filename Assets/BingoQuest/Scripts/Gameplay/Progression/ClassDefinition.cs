@@ -11,6 +11,7 @@ namespace BingoQuest.Gameplay.Progression
     public class ClassDefinition
     {
         public string ClassId { get; set; }
+        public string Id => ClassId;
         public string ClassName { get; set; }
         public string Description { get; set; }
 

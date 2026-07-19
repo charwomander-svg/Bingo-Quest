@@ -1,4 +1,5 @@
 using BingoQuest.Gameplay.Objectives;
+using BingoQuest.Gameplay.Content;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -46,11 +47,13 @@ namespace BingoQuest.Gameplay.Bingo
     public class BingoSystem : MonoBehaviour
     {
         [SerializeField] private PatternRewardHandler rewardHandler = new();
+        [SerializeField] private AuthoredContentCatalog contentCatalog;
         
         private BingoCard card;
         private PatternDetector patternDetector;
         private Dictionary<string, IObjective> objectiveMap = new();
         private ObjectiveContext objectiveContext;
+        private bool initialized;
 
         public static BingoSystem Instance { get; private set; }
 
@@ -73,16 +76,22 @@ namespace BingoQuest.Gameplay.Bingo
 
         private void Start()
         {
-            Initialize();
+            if (!initialized)
+                Initialize();
         }
 
-        public void Initialize()
+        public void Initialize(AuthoredContentCatalog catalog = null)
         {
+            contentCatalog = catalog ?? contentCatalog ?? AuthoredContentCatalog.CreateDefault();
             card = new BingoCard();
             patternDetector = new PatternDetector(card);
+            initialized = true;
             
             if (ObjectiveEventBus.Instance != null)
+            {
+                ObjectiveEventBus.Instance.Unsubscribe(HandleObjectiveEvent);
                 ObjectiveEventBus.Instance.Subscribe(HandleObjectiveEvent);
+            }
         }
 
         /// <summary>Generate a new run with initial objectives.</summary>
@@ -93,8 +102,9 @@ namespace BingoQuest.Gameplay.Bingo
             objectiveMap.Clear();
             OnCardReset?.Invoke();
 
-            // Populate card with objectives (placeholder - would be data-driven in production)
-            var objectiveList = GenerateObjectivesForRun(context);
+            var objectiveList = contentCatalog != null
+                ? contentCatalog.CreateObjectivesForContext(context)
+                : GenerateObjectivesForRun(context);
             for (int i = 0; i < objectiveList.Count && i < BingoCard.GRID_SIZE * BingoCard.GRID_SIZE; i++)
             {
                 int row = i / BingoCard.GRID_SIZE;

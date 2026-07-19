@@ -15,8 +15,11 @@ namespace BingoQuest.Gameplay.Loot
         };
 
         public IReadOnlyList<ItemInstance> Items => _items;
+        public IReadOnlyList<ItemInstance> AllItems => _items;
         public IReadOnlyDictionary<string, int> Materials => _materials;
+        public IReadOnlyDictionary<string, int> AllMaterials => _materials;
         public IReadOnlyDictionary<string, int> Currencies => _currencies;
+        public IReadOnlyDictionary<string, int> AllCurrencies => _currencies;
 
         public void AddItem(ItemInstance item)
         {
@@ -87,6 +90,40 @@ namespace BingoQuest.Gameplay.Loot
             }
 
             return count;
+        }
+
+        public void ClearItems()
+        {
+            _items.Clear();
+        }
+
+        public void ClearMaterials()
+        {
+            _materials.Clear();
+        }
+
+        public void ClearCurrencies()
+        {
+            _currencies.Clear();
+            _currencies["fate_shards"] = 0;
+            _currencies["bingo_tokens"] = 0;
+            _currencies["hero_medals"] = 0;
+        }
+
+        public void SetMaterial(string materialId, int amount)
+        {
+            if (string.IsNullOrWhiteSpace(materialId))
+                return;
+
+            _materials[materialId] = Mathf.Max(0, amount);
+        }
+
+        public void SetCurrency(string currencyId, int amount)
+        {
+            if (string.IsNullOrWhiteSpace(currencyId))
+                return;
+
+            _currencies[currencyId] = Mathf.Max(0, amount);
         }
     }
 }

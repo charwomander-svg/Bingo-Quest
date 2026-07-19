@@ -1,3 +1,4 @@
+using BingoQuest.Gameplay.Balance;
 using BingoQuest.Gameplay.Objectives;
 using UnityEngine;
 
@@ -61,6 +62,12 @@ namespace BingoQuest.Gameplay.Combat
     public class DamageCalculator
     {
         private System.Random random = new(System.Environment.TickCount);
+        private BalanceConfig balanceConfig;
+
+        public DamageCalculator(BalanceConfig config = null)
+        {
+            balanceConfig = config;
+        }
 
         public DamageResult CalculateDamage(
             CharacterStats attacker,
@@ -69,23 +76,38 @@ namespace BingoQuest.Gameplay.Combat
             float difficultyModifier = 1.0f)
         {
             // Check if defender dodges
-            if (random.NextSingle() < defender.DodgeChance)
+            if ((float)random.NextDouble() < defender.DodgeChance)
                 return DamageResult.Dodged();
 
             // Base damage from attack stat + ability scaling
-            int baseDamage = (int)(attacker.Attack * ability.DamageScale);
+            float damageScale = balanceConfig?.BaseDamageScale ?? 1.0f;
+            int baseDamage = (int)(attacker.Attack * ability.DamageScale * damageScale);
 
             // Elemental bonus if applicable
             if (ability.ElementType != ElementType.Physical)
-                baseDamage += attacker.ElementalPower;
+            {
+                float elementalScale = balanceConfig?.ElementalPowerScale ?? 1.0f;
+                baseDamage += (int)(attacker.ElementalPower * elementalScale);
+            }
 
             // Check critical hit
-            bool isCrit = random.NextSingle() < attacker.CritChance;
+            bool isCrit = (float)random.NextDouble() < attacker.CritChance;
             if (isCrit)
-                baseDamage = (int)(baseDamage * attacker.CritDamage);
+            {
+                float critMult = balanceConfig?.CritDamageMultiplier ?? 1.5f;
+                baseDamage = (int)(baseDamage * critMult);
+            }
 
-            // Apply enemy defense (roughly 50% of defense rating)
-            int mitigatedDamage = Mathf.Max(1, baseDamage - (defender.Defense / 2));
+            // Apply enemy defense (configurable mitigation factor)
+            float mitigationFactor = balanceConfig?.DefenseMitigationFactor ?? 0.5f;
+            int mitigatedDamage = Mathf.Max(1, baseDamage - (int)(defender.Defense * mitigationFactor));
+
+            // Apply minimum damage threshold
+            if (balanceConfig != null)
+            {
+                int minDamage = balanceConfig.CalculateMinDamage(baseDamage);
+                mitigatedDamage = Mathf.Max(minDamage, mitigatedDamage);
+            }
 
             // Apply difficulty modifier
             int finalDamage = (int)(mitigatedDamage * difficultyModifier);

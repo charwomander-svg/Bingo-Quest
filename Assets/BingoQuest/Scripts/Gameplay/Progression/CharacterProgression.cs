@@ -19,6 +19,7 @@ namespace BingoQuest.Gameplay.Progression
         // Permanent unlocks
         public ClassDefinition Class { get; private set; }
         public SkillTree SkillTree { get; private set; }
+        private ProgressionConfig progressionConfig;
         
         // Bonuses from progression
         private Dictionary<string, int> statBonuses = new()
@@ -37,24 +38,57 @@ namespace BingoQuest.Gameplay.Progression
         public event Action<int> OnSkillPointsChanged;
         public event Action<string> OnAbilityUnlocked;
 
-        public CharacterProgression(ClassDefinition classDefinition, SkillTree skillTree)
+        public CharacterProgression(ClassDefinition classDefinition, SkillTree skillTree, ProgressionConfig config = null)
         {
             Class = classDefinition;
             SkillTree = skillTree;
-            SkillPoints = 2; // Starting skill points
+            progressionConfig = config;
+            
+            if (progressionConfig != null)
+                SkillPoints = progressionConfig.StartingSkillPoints;
+            else
+                SkillPoints = 2; // Fallback default
         }
 
         /// <summary>Apply experience and check for level-up.</summary>
-        public void GainExperience(int amount)
+        public void GainExperience(int amount, DifficultyMode difficulty = DifficultyMode.Normal)
         {
+            if (amount <= 0)
+                return;
+
+            // Apply difficulty multiplier if config exists
+            if (progressionConfig != null)
+            {
+                float multiplier = progressionConfig.GetDifficultyXPMultiplier(difficulty);
+                amount = (int)(amount * multiplier);
+            }
+
             Experience += amount;
 
-            while (Experience >= LevelUpThreshold)
+            while (Experience >= LevelUpThreshold && Level < (progressionConfig?.MaxLevel ?? 999))
             {
                 Experience -= LevelUpThreshold;
                 Level++;
-                SkillPoints += 1;
-                LevelUpThreshold = (int)(100 * Mathf.Pow(1.1f, Level - 1)); // Exponential scaling
+                
+                if (progressionConfig != null)
+                {
+                    // Add skill points from config
+                    SkillPoints += progressionConfig.SkillPointsPerLevel;
+                    
+                    // Check for bonus skill points
+                    if (progressionConfig.BonusSkillPointInterval > 0 && 
+                        Level % progressionConfig.BonusSkillPointInterval == 0)
+                    {
+                        SkillPoints += progressionConfig.BonusSkillPointsAmount;
+                    }
+                    
+                    LevelUpThreshold = progressionConfig.GetNextLevelXPRequired(Level);
+                }
+                else
+                {
+                    SkillPoints += 1;
+                    LevelUpThreshold = (int)(100 * Mathf.Pow(1.1f, Level - 1));
+                }
 
                 OnLevelUp?.Invoke(Level);
                 OnSkillPointsChanged?.Invoke(SkillPoints);
@@ -122,6 +156,35 @@ namespace BingoQuest.Gameplay.Progression
 
         public float GetFloatBonus(string bonusType) =>
             floatBonuses.TryGetValue(bonusType, out var bonus) ? bonus : 0;
+
+        public void ForceSetLevel(int level, int experience)
+        {
+            Level = level;
+            Experience = experience;
+            LevelUpThreshold = (int)(100 * Mathf.Pow(1.1f, Level - 1));
+        }
+
+        public void ForceSetSkillPoints(int points) => SkillPoints = points;
+
+        public void RecalculateBonusesFromUnlockedSkills()
+        {
+            statBonuses["health"] = 0;
+            statBonuses["attack"] = 0;
+            statBonuses["defense"] = 0;
+            floatBonuses["crit_chance"] = 0f;
+            floatBonuses["dodge_chance"] = 0f;
+
+            var unlocked = SkillTree.GetUnlockedNodes();
+            for (int i = 0; i < unlocked.Count; i++)
+            {
+                var node = unlocked[i];
+                statBonuses["health"] += node.HealthBonus;
+                statBonuses["attack"] += node.AttackBonus;
+                statBonuses["defense"] += node.DefenseBonus;
+                floatBonuses["crit_chance"] += node.CritChanceBonus;
+                floatBonuses["dodge_chance"] += node.DodgeChanceBonus;
+            }
+        }
 
         public int GetExperienceForNextLevel() => LevelUpThreshold - Experience;
 
