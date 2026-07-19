@@ -100,7 +100,7 @@ namespace BingoQuest.Gameplay.Progression
 
         public void Reset()
         {
-            foreach (var key in unlockedNodes.Keys)
+            foreach (var key in new List<string>(unlockedNodes.Keys))
                 unlockedNodes[key] = false;
         }
 
