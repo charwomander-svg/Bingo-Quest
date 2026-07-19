@@ -20,10 +20,10 @@ namespace BingoQuest.Platform.Save
         private readonly List<ProfileMeta> _index = new();
 
         public IReadOnlyList<ProfileMeta> Profiles => _index;
-        public SaveProfile ActiveProfile { get; private set; }
+        public BingoQuest.Platform.Save.SaveProfile ActiveProfile { get; private set; }
 
-        public event Action<SaveProfile> OnProfileLoaded;
-        public event Action<SaveProfile> OnProfileSaved;
+        public event Action<BingoQuest.Platform.Save.SaveProfile> OnProfileLoaded;
+        public event Action<BingoQuest.Platform.Save.SaveProfile> OnProfileSaved;
         public event Action<string> OnCorruptionDetected;
 
         public ProfileManager(ISaveBackend backend)
@@ -33,16 +33,16 @@ namespace BingoQuest.Platform.Save
         }
 
         // ?? Create ???????????????????????????????????????????????????????????????
-        public SaveProfile CreateProfile(string displayName)
+        public BingoQuest.Platform.Save.SaveProfile CreateProfile(string displayName)
         {
             if (_index.Count >= MaxSlots)
                 throw new InvalidOperationException($"Maximum of {MaxSlots} save profiles reached.");
 
-            var profile = new SaveProfile
+            var profile = new BingoQuest.Platform.Save.SaveProfile
             {
                 ProfileId = Guid.NewGuid().ToString("N"),
                 DisplayName = displayName,
-                SchemaVersion = SaveProfile.CurrentSchemaVersion,
+                SchemaVersion = BingoQuest.Platform.Save.SaveProfile.CurrentSchemaVersion,
                 CreatedAtUtc = DateTime.UtcNow,
                 LastSavedAtUtc = DateTime.UtcNow,
             };
@@ -55,7 +55,7 @@ namespace BingoQuest.Platform.Save
         }
 
         // ?? Load ?????????????????????????????????????????????????????????????????
-        public bool TryLoadProfile(string profileId, out SaveProfile profile)
+        public bool TryLoadProfile(string profileId, out BingoQuest.Platform.Save.SaveProfile profile)
         {
             profile = null;
             string active = _backend.Read(ActiveKey(profileId));
@@ -93,7 +93,7 @@ namespace BingoQuest.Platform.Save
         }
 
         // ?? Save ?????????????????????????????????????????????????????????????????
-        public void SaveProfile(SaveProfile profile)
+        public void SaveProfile(BingoQuest.Platform.Save.SaveProfile profile)
         {
             if (profile == null) throw new ArgumentNullException(nameof(profile));
             profile.LastSavedAtUtc = DateTime.UtcNow;
@@ -114,7 +114,7 @@ namespace BingoQuest.Platform.Save
         }
 
         // ?? Internal ?????????????????????????????????????????????????????????????
-        private void WriteProfile(SaveProfile profile)
+        private void WriteProfile(BingoQuest.Platform.Save.SaveProfile profile)
         {
             string json = SaveSerializer.Serialize(profile);
             // Promote current active to backup before overwriting
