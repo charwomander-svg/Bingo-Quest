@@ -303,6 +303,6 @@ namespace BingoQuest.Gameplay.Social
             _teamComboChains.TryGetValue(teamId, out var count) ? count : 0;
 
         public ObjectiveEvent CreateCoopObjectiveEvent(ObjectiveEventType type, string sourceId, int amount = 1) =>
-            new(type, sourceId, amount, ElementType.Physical, IsCritical: false, InCoop: true, InPvp: false);
+            new ObjectiveEvent(type, sourceId, amount, ElementType.Physical, isCritical: false, inCoop: true, inPvp: false);
     }
 }
