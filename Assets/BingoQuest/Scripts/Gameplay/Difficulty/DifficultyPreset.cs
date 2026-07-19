@@ -139,16 +139,16 @@ namespace BingoQuest.Gameplay.Difficulty
         public AbilityConfig GetAbilityConfig() => currentPreset?.AbilityConfig;
 
         /// <summary>Get current difficulty mode from preset rating.</summary>
-        public Progression.DifficultyMode GetDifficultyMode()
+        public BingoQuest.Gameplay.Progression.DifficultyMode GetDifficultyMode()
         {
             if (currentPreset == null)
-                return Progression.DifficultyMode.Normal;
+                return BingoQuest.Gameplay.Progression.DifficultyMode.Normal;
 
             float rating = currentPreset.DifficultyRating;
-            if (rating <= 1.5f) return Progression.DifficultyMode.Easy;
-            if (rating <= 2.5f) return Progression.DifficultyMode.Normal;
-            if (rating <= 3.5f) return Progression.DifficultyMode.Hard;
-            return Progression.DifficultyMode.Nightmare;
+            if (rating <= 1.5f) return BingoQuest.Gameplay.Progression.DifficultyMode.Easy;
+            if (rating <= 2.5f) return BingoQuest.Gameplay.Progression.DifficultyMode.Normal;
+            if (rating <= 3.5f) return BingoQuest.Gameplay.Progression.DifficultyMode.Hard;
+            return BingoQuest.Gameplay.Progression.DifficultyMode.Nightmare;
         }
 
         /// <summary>Reset to null state (useful for testing).</summary>

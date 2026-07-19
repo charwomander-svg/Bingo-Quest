@@ -144,7 +144,7 @@ namespace BingoQuest.Demo
 
             var manager = DifficultyManager.Instance;
             var preset = manager?.CurrentPreset;
-            var mode = manager != null ? manager.GetDifficultyMode() : Progression.DifficultyMode.Normal;
+            var mode = manager != null ? manager.GetDifficultyMode() : DifficultyMode.Normal;
             float difficultyMultiplier = manager?.GetBalanceConfig()?.GetDifficultyMultiplier(mode) ?? 1f;
             float cooldownMultiplier = manager?.GetAbilityConfig()?.GetDifficultyCooldownMultiplier(mode) ?? 1f;
             float xpMultiplier = manager?.GetProgressionConfig()?.GetDifficultyXPMultiplier(mode) ?? 1f;

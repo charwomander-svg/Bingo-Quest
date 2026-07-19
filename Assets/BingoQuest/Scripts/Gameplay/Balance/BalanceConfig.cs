@@ -52,12 +52,12 @@ namespace BingoQuest.Gameplay.Balance
         public float DefenseMitigationFactor => defenseMitigationFactor;
         public float MinDamagePercent => minDamagePercent;
 
-        public float GetDifficultyMultiplier(DifficultyMode mode) => mode switch
+        public float GetDifficultyMultiplier(BingoQuest.Gameplay.Progression.DifficultyMode mode) => mode switch
         {
-            DifficultyMode.Easy => easyModifier,
-            DifficultyMode.Normal => normalModifier,
-            DifficultyMode.Hard => hardModifier,
-            DifficultyMode.Nightmare => nightmareModifier,
+            BingoQuest.Gameplay.Progression.DifficultyMode.Easy => easyModifier,
+            BingoQuest.Gameplay.Progression.DifficultyMode.Normal => normalModifier,
+            BingoQuest.Gameplay.Progression.DifficultyMode.Hard => hardModifier,
+            BingoQuest.Gameplay.Progression.DifficultyMode.Nightmare => nightmareModifier,
             _ => normalModifier
         };
 
@@ -100,11 +100,4 @@ namespace BingoQuest.Gameplay.Balance
         }
     }
 
-    public enum DifficultyMode
-    {
-        Easy = 0,
-        Normal = 1,
-        Hard = 2,
-        Nightmare = 3
-    }
 }

@@ -110,12 +110,12 @@ namespace BingoQuest.Gameplay.Combat
         public float CooldownResetChance => Mathf.Clamp01(cooldownResetChance);
 
         /// <summary>Get cooldown multiplier for a difficulty mode.</summary>
-        public float GetDifficultyCooldownMultiplier(Progression.DifficultyMode mode) => mode switch
+        public float GetDifficultyCooldownMultiplier(BingoQuest.Gameplay.Progression.DifficultyMode mode) => mode switch
         {
-            Progression.DifficultyMode.Easy => easyCooldownMultiplier,
-            Progression.DifficultyMode.Normal => normalCooldownMultiplier,
-            Progression.DifficultyMode.Hard => hardCooldownMultiplier,
-            Progression.DifficultyMode.Nightmare => nightmareCooldownMultiplier,
+            BingoQuest.Gameplay.Progression.DifficultyMode.Easy => easyCooldownMultiplier,
+            BingoQuest.Gameplay.Progression.DifficultyMode.Normal => normalCooldownMultiplier,
+            BingoQuest.Gameplay.Progression.DifficultyMode.Hard => hardCooldownMultiplier,
+            BingoQuest.Gameplay.Progression.DifficultyMode.Nightmare => nightmareCooldownMultiplier,
             _ => normalCooldownMultiplier
         };
 
@@ -123,7 +123,7 @@ namespace BingoQuest.Gameplay.Combat
         public float CalculateFinalCooldown(
             AbilitySlot slot,
             float baseCooldown,
-            Progression.DifficultyMode difficulty = Progression.DifficultyMode.Normal)
+            BingoQuest.Gameplay.Progression.DifficultyMode difficulty = BingoQuest.Gameplay.Progression.DifficultyMode.Normal)
         {
             float cooldown = GetCooldown(slot, baseCooldown);
             float difficultyMult = GetDifficultyCooldownMultiplier(difficulty);

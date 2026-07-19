@@ -58,12 +58,12 @@ namespace BingoQuest.Gameplay.Progression
         public bool ResetAbilityCooldowsOnLevelUp => resetAbilityCooldowsOnLevelUp;
 
         /// <summary>Get XP multiplier for a difficulty mode.</summary>
-        public float GetDifficultyXPMultiplier(Progression.DifficultyMode mode) => mode switch
+        public float GetDifficultyXPMultiplier(DifficultyMode mode) => mode switch
         {
-            Progression.DifficultyMode.Easy => easyXPMultiplier,
-            Progression.DifficultyMode.Normal => normalXPMultiplier,
-            Progression.DifficultyMode.Hard => hardXPMultiplier,
-            Progression.DifficultyMode.Nightmare => nightmareXPMultiplier,
+            DifficultyMode.Easy => easyXPMultiplier,
+            DifficultyMode.Normal => normalXPMultiplier,
+            DifficultyMode.Hard => hardXPMultiplier,
+            DifficultyMode.Nightmare => nightmareXPMultiplier,
             _ => normalXPMultiplier
         };
 
@@ -136,14 +136,11 @@ namespace BingoQuest.Gameplay.Progression
         }
     }
 
-    public partial class Progression
+    public enum DifficultyMode
     {
-        public enum DifficultyMode
-        {
-            Easy = 0,
-            Normal = 1,
-            Hard = 2,
-            Nightmare = 3
-        }
+        Easy = 0,
+        Normal = 1,
+        Hard = 2,
+        Nightmare = 3
     }
 }

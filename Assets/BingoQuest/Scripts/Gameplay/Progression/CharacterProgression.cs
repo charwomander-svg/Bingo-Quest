@@ -51,7 +51,7 @@ namespace BingoQuest.Gameplay.Progression
         }
 
         /// <summary>Apply experience and check for level-up.</summary>
-        public void GainExperience(int amount, Progression.DifficultyMode difficulty = Progression.DifficultyMode.Normal)
+        public void GainExperience(int amount, DifficultyMode difficulty = DifficultyMode.Normal)
         {
             if (amount <= 0)
                 return;
