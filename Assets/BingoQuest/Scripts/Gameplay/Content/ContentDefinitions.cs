@@ -1,4 +1,5 @@
 using BingoQuest.Gameplay.Combat;
+using BingoQuest.Gameplay.Objectives;
 using System.Collections.Generic;
 using UnityEngine;
 
