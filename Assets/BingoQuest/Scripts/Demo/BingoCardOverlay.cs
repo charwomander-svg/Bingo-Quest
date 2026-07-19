@@ -41,7 +41,7 @@ namespace BingoQuest.Demo
 
             // Tick flash timers
             var toRemove = new List<string>();
-            foreach (var key in _completionFlashTimers.Keys)
+            foreach (var key in new List<string>(_completionFlashTimers.Keys))
             {
                 _completionFlashTimers[key] -= Time.deltaTime;
                 if (_completionFlashTimers[key] <= 0f)
