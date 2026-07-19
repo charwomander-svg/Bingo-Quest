@@ -76,7 +76,7 @@ namespace BingoQuest.Gameplay.Combat
             float difficultyModifier = 1.0f)
         {
             // Check if defender dodges
-            if (random.NextSingle() < defender.DodgeChance)
+            if ((float)random.NextDouble() < defender.DodgeChance)
                 return DamageResult.Dodged();
 
             // Base damage from attack stat + ability scaling
@@ -91,7 +91,7 @@ namespace BingoQuest.Gameplay.Combat
             }
 
             // Check critical hit
-            bool isCrit = random.NextSingle() < attacker.CritChance;
+            bool isCrit = (float)random.NextDouble() < attacker.CritChance;
             if (isCrit)
             {
                 float critMult = balanceConfig?.CritDamageMultiplier ?? 1.5f;
